@@ -62,14 +62,14 @@ func NewTodoElement(t Todo) TodoElement{
 		doc.AddClass(i.AsElement(),"toggle")
 
 		l:= doc.NewLabel(id,id+"-lbl")
-		
-		b:= doc.NewButton("id",id+"-btn","button").SetText("X")
+
+		b:= doc.NewButton("id",id+"-btn","button")
 		doc.AddClass(b.AsElement(),"destroy")
 
 		d.SetChildren(i,l,b)
 		li:= doc.NewListItem("li-"+id,"li-"+id).SetValue(d.AsElement())
 
-		li.AsElement().Watch("data","todo",li,ui.NewMutationHandler(func(evt ui.MutationEvent)bool{
+		li.AsElement().Watch("ui","todo",li,ui.NewMutationHandler(func(evt ui.MutationEvent)bool{
 			t,ok:= evt.NewValue().(ui.Object)
 			if !ok{return true}
 
@@ -117,8 +117,13 @@ func NewTodoElement(t Todo) TodoElement{
 		}))
 
 		i.AsElement().AddEventListener("click",ui.NewEventHandler(func(evt ui.Event)bool{
-
 			li.AsElement().Set("event","toggle",ui.Bool(true))
+			return false
+		}),doc.NativeEventBridge)
+
+		b.AsElement().AddEventListener("click",ui.NewEventHandler(func(evt ui.Event)bool{
+			evt.PreventDefault()
+			li.AsElement().Set("event","delete",ui.Bool(true))
 			return false
 		}),doc.NativeEventBridge)
 
@@ -179,10 +184,8 @@ func NewTodosListElement(name string, id string, options ...string) TodosListEle
 					res,ok:= t.AsElement().Get("data", "todoslist")
 					if !ok {
 						tdl = ui.NewList()
-					}
-					tdl, ok = res.(ui.List)
-					if !ok {
-						tdl = ui.NewList()
+					} else{
+						tdl= res.(ui.List)
 					}
 
 					for i,rawtodo:= range tdl{
@@ -191,6 +194,27 @@ func NewTodosListElement(name string, id string, options ...string) TodosListEle
 						if oldid == idstr{
 							tdl[i] =  evt.NewValue()
 							t.AsElement().SetDataSetUI("todoslist",tdl)
+						}
+					}
+					return false
+				}))
+
+				t.AsElement().Watch("event","delete",ntd,ui.NewMutationHandler(func(evt ui.MutationEvent)bool{
+					var tdl ui.List
+					res,ok:= t.AsElement().Get("data", "todoslist")
+					if !ok {
+						tdl = ui.NewList()
+					} else{
+						tdl= res.(ui.List)
+					}
+
+					for i,rawtodo:= range tdl{
+						todo:= rawtodo.(Todo)
+						oldid,_:=todo.Get("id")
+						if oldid == idstr{
+							tdl= append(tdl[:i],tdl[i+1:]...)
+							t.AsElement().SetDataSetUI("todoslist",tdl)
+							break
 						}
 					}
 					return false
@@ -263,6 +287,16 @@ func main() {
 			// 5. Build MainFooter
 
 		// x.Build AppFooter
+
+		//css
+		doc.AddClass(AppSection.AsElement(),"todo-app")
+		doc.AddClass(AppFooter.AsElement(),"info")
+		doc.AddClass(MainHeader.AsElement(),"header")
+		doc.AddClass(MainSection.AsElement(),"main")
+		doc.AddClass(MainFooter.AsElement(),"footer")
+		doc.AddClass(todosinput.AsElement(),"new-todo")
+		doc.AddClass(ToggleAllInput.AsElement(),"toggle-all")
+		doc.AddClass(TodosList.AsElement(),"todo-list")
 
 	// 4. Watch for new todos to insert
 	AppSection.AsElement().Watch("event", "newtodo", todosinput.AsElement(), ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
