@@ -3,8 +3,8 @@ package main
 import (
 	"log"
 	//"strconv"
-	"time"
 	"strings"
+	"time"
 
 	"github.com/atdiar/particleui"
 	"github.com/atdiar/particleui/drivers/js"
@@ -24,126 +24,133 @@ func NewTodo(title ui.String) Todo {
 	return o
 }
 
-type TodoElement struct{
+type TodoElement struct {
 	ui.BasicElement
 }
 
-func(t TodoElement) SetComplete(b bool) TodoElement{
-	res,ok:= t.AsElement().Get("data","todo")
-	if !ok{
+func (t TodoElement) SetComplete(b bool) TodoElement {
+	res, ok := t.AsElement().Get("data", "todo")
+	if !ok {
 		return t
 	}
-	todo,ok:= res.(ui.Object)
-	if !ok{
+	todo, ok := res.(ui.Object)
+	if !ok {
 		return t
 	}
 
-	todo.Set("completed",ui.Bool(b))
-	t.AsElement().SetDataSetUI("todo",todo)
+	todo.Set("completed", ui.Bool(b))
+	t.AsElement().SetDataSetUI("todo", todo)
 
 	return t
 }
 
-func NewTodoElement(t Todo) TodoElement{
-	todoid,ok:= t.Get("id")
-	if !ok{
+func NewTodoElement(t Todo) TodoElement {
+	todoid, ok := t.Get("id")
+	if !ok {
 		return TodoElement{}
 	}
-	todoidstr,ok:= todoid.(ui.String)
-	if !ok{
+	todoidstr, ok := todoid.(ui.String)
+	if !ok {
 		return TodoElement{}
 	}
 
-	newtodo:= doc.Elements.NewConstructor("todo",func(name string,id string)*ui.Element{
-		d:=doc.NewDiv(name,id)
-		doc.AddClass(d.AsElement(),"view")
+	newtodo := doc.Elements.NewConstructor("todo", func(name string, id string) *ui.Element {
+		d := doc.NewDiv(name, id)
+		doc.AddClass(d.AsElement(), "view")
 
-		i:= doc.NewInput("checkbox","completed", id+"-completed")
-		doc.AddClass(i.AsElement(),"toggle")
+		i := doc.NewInput("checkbox", "completed", id+"-completed")
+		doc.AddClass(i.AsElement(), "toggle")
 
-		l:= doc.NewLabel(id,id+"-lbl")
+		l := doc.NewLabel(id, id+"-lbl")
 
-		b:= doc.NewButton("id",id+"-btn","button")
-		doc.AddClass(b.AsElement(),"destroy")
+		b := doc.NewButton("id", id+"-btn", "button")
+		doc.AddClass(b.AsElement(), "destroy")
 
-		d.SetChildren(i,l,b)
-		li:= doc.NewListItem("li-"+id,"li-"+id).SetValue(d.AsElement())
+		d.SetChildren(i, l, b)
+		li := doc.NewListItem("li-"+id, "li-"+id).SetValue(d.AsElement())
 
-		li.AsElement().Watch("ui","todo",li,ui.NewMutationHandler(func(evt ui.MutationEvent)bool{
-			t,ok:= evt.NewValue().(ui.Object)
-			if !ok{return true}
-
-			_,ok= t.Get("id")
-			if !ok{return true}
-
-			todocomplete,ok:= t.Get("completed")
-			if !ok{return true}
-			todocompletebool := todocomplete.(ui.Bool)
-
-			if todocompletebool{
-				doc.AddClass(li.AsElement(),"complete")
-			} else {
-				doc.RemoveClass(li.AsElement(),"complete")
+		li.AsElement().Watch("ui", "todo", li, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
+			t, ok := evt.NewValue().(ui.Object)
+			if !ok {
+				return true
 			}
 
-			todotitle,ok:= t.Get("title")
-			if !ok{return true}
-			todotitlestr:= todotitle.(ui.String)
+			_, ok = t.Get("id")
+			if !ok {
+				return true
+			}
 
-			i.AsElement().SetUI("checked",todocompletebool)
+			todocomplete, ok := t.Get("completed")
+			if !ok {
+				return true
+			}
+			todocompletebool := todocomplete.(ui.Bool)
+
+			if todocompletebool {
+				doc.AddClass(li.AsElement(), "complete")
+			} else {
+				doc.RemoveClass(li.AsElement(), "complete")
+			}
+
+			todotitle, ok := t.Get("title")
+			if !ok {
+				return true
+			}
+			todotitlestr := todotitle.(ui.String)
+
+			i.AsElement().SetUI("checked", todocompletebool)
 			l.SetText(string(todotitlestr))
 
 			return false
 		}))
 
-		li.AsElement().Watch("event","toggle",li,ui.NewMutationHandler(func(evt ui.MutationEvent)bool{
-			res,ok:= li.AsElement().Get("data","todo")
-			if !ok{
+		li.AsElement().Watch("event", "toggle", li, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
+			res, ok := li.AsElement().Get("data", "todo")
+			if !ok {
 				return true
 			}
 			todo := res.(ui.Object)
 
-			b,ok:=todo.Get("completed")
-			if !ok{
+			b, ok := todo.Get("completed")
+			if !ok {
 				return true
 			}
 			complete := !(b.(ui.Bool))
 
-			todo.Set("completed",ui.Bool(complete))
+			todo.Set("completed", ui.Bool(complete))
 
-
-			li.AsElement().SetDataSetUI("todo",todo)
+			li.AsElement().SetDataSetUI("todo", todo)
 			return false
 		}))
 
-		i.AsElement().AddEventListener("click",ui.NewEventHandler(func(evt ui.Event)bool{
-			li.AsElement().Set("event","toggle",ui.Bool(true))
+		i.AsElement().AddEventListener("click", ui.NewEventHandler(func(evt ui.Event) bool {
+			li.AsElement().Set("event", "toggle", ui.Bool(true))
 			return false
-		}),doc.NativeEventBridge)
+		}), doc.NativeEventBridge)
 
-		b.AsElement().AddEventListener("click",ui.NewEventHandler(func(evt ui.Event)bool{
-			evt.PreventDefault()
-			li.AsElement().Set("event","delete",ui.Bool(true))
+		b.AsElement().AddEventListener("click", ui.NewEventHandler(func(evt ui.Event) bool {
+			li.AsElement().Set("event", "delete", ui.Bool(true))
+			DEBUG("click")
 			return false
-		}),doc.NativeEventBridge)
+		}), doc.NativeEventBridge)
 
 		return li.AsElement()
 
-	},doc.AllowSessionStoragePersistence, doc.AllowAppLocalStoragePersistence)
+	}, doc.AllowSessionStoragePersistence, doc.AllowAppLocalStoragePersistence)
 
-	ntd:= doc.LoadElement(newtodo("todo-"+string(todoidstr),"todo-"+string(todoidstr)))
-	ntd.SetDataSetUI("todo",t)
+	ntd := doc.LoadElement(newtodo("todo-"+string(todoidstr), "todo-"+string(todoidstr)))
+	ntd.SetDataSetUI("todo", t)
 
 	return TodoElement{ui.BasicElement{ntd}}
 }
 
-type TodosListElement struct{
+type TodosListElement struct {
 	ui.BasicElement
 }
 
-func(t TodosListElement) GetList() ui.List{
+func (t TodosListElement) GetList() ui.List {
 	var tdl ui.List
-	res,ok:= t.AsElement().Get("data", "todoslist")
+	res, ok := t.AsElement().Get("data", "todoslist")
 	if !ok {
 		tdl = ui.NewList()
 	}
@@ -154,84 +161,85 @@ func(t TodosListElement) GetList() ui.List{
 	return tdl
 }
 
-func(t TodosListElement) SetList(tdl ui.List) TodosListElement{
+func (t TodosListElement) SetList(tdl ui.List) TodosListElement {
 	t.AsElement().SetDataSetUI("todoslist", tdl)
 	return t
 }
 
-func NewTodosListElement(name string, id string, options ...string) TodosListElement{
-	newTodolistElement:= doc.Elements.NewConstructor("todoslist",func(name string,id string)*ui.Element{
-		t:= doc.NewUl("todoslist", "todoslist")
+func NewTodosListElement(name string, id string, options ...string) TodosListElement {
+	newTodolistElement := doc.Elements.NewConstructor("todoslist", func(name string, id string) *ui.Element {
+		t := doc.NewUl("todoslist", "todoslist")
+		doc.AddClass(t.AsElement(), "todo-list")
+
 		t.AsElement().Watch("ui", "todoslist", t.AsElement(), ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
+			DEBUG("list update")
 			// Handles list change, for instance, on new todo insertion
 			t.AsElement().DeleteChildren()
-			list:= evt.NewValue().(ui.List)
+			list := evt.NewValue().(ui.List) // TODO :  diff old list and new list
 
 			for _, v := range list {
 				// Let's get each todo
-				o := v.(ui.Object)
-				id,ok:= o.Get("id")
-				if !ok{
-					continue
-				}
+				o := v.(Todo)
+				id, ok := o.Get("id")
+				if !ok {panic("Unexpected todo format")}
 				idstr := id.(ui.String)
+				DEBUG("SET WATCHER")
+				ntd := NewTodoElement(o).AsElement()
+				t.AsElement().AppendChild(ntd)
 
-				ntd:= NewTodoElement(o).AsElement()
-				// escalate back to the todolist the data changes issued at the todo Element level
-				t.AsElement().Watch("data","todo",ntd,ui.NewMutationHandler(func(evt ui.MutationEvent)bool{
-
+				t.AsElement().Watch("data", "todo", ntd, ui.NewMutationHandler(func(evt ui.MutationEvent) bool { // escalate back to the todolist the data changes issued at the todo Element level
 					var tdl ui.List
-					res,ok:= t.AsElement().Get("data", "todoslist")
+					res, ok := t.AsElement().Get("data", "todoslist")
 					if !ok {
 						tdl = ui.NewList()
-					} else{
-						tdl= res.(ui.List)
+					} else {
+						tdl = res.(ui.List)
 					}
 
-					for i,rawtodo:= range tdl{
-						todo:= rawtodo.(Todo)
-						oldid,_:=todo.Get("id")
-						if oldid == idstr{
-							tdl[i] =  evt.NewValue()
-							t.AsElement().SetDataSetUI("todoslist",tdl)
-						}
-					}
-					return false
-				}))
-
-				t.AsElement().Watch("event","delete",ntd,ui.NewMutationHandler(func(evt ui.MutationEvent)bool{
-					var tdl ui.List
-					res,ok:= t.AsElement().Get("data", "todoslist")
-					if !ok {
-						tdl = ui.NewList()
-					} else{
-						tdl= res.(ui.List)
-					}
-
-					for i,rawtodo:= range tdl{
-						todo:= rawtodo.(Todo)
-						oldid,_:=todo.Get("id")
-						if oldid == idstr{
-							tdl= append(tdl[:i],tdl[i+1:]...)
-							t.AsElement().SetDataSetUI("todoslist",tdl)
+					for i, rawtodo := range tdl {
+						todo := rawtodo.(Todo)
+						oldid, _ := todo.Get("id")
+						if oldid == idstr {
+							tdl[i] = evt.NewValue()
+							t.AsElement().SetDataSetUI("todoslist", tdl) // update state and refresh list representation
 							break
 						}
 					}
 					return false
 				}))
-				t.AsElement().AppendChild(ntd)
+
+				t.AsElement().Watch("event", "delete", ntd, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
+					var tdl ui.List
+					res, ok := t.AsElement().Get("data", "todoslist")
+					if !ok {
+						tdl = ui.NewList()
+					} else {
+						tdl = res.(ui.List)
+					}
+
+					for i, rawtodo := range tdl {
+						todo := rawtodo.(Todo)
+						oldid, _ := todo.Get("id")
+						if oldid == idstr {
+							tdl = append(tdl[:i], tdl[i+1:]...)
+							t.AsElement().SetDataSetUI("todoslist", tdl) // refresh list representation
+							break
+						}
+					}
+					return false
+				}))
+
 			}
 			return false
 		}))
 
 		return t.AsElement()
-	},doc.AllowSessionStoragePersistence, doc.AllowAppLocalStoragePersistence)
+	}, doc.AllowSessionStoragePersistence, doc.AllowAppLocalStoragePersistence)
 
-	return TodosListElement{ui.BasicElement{doc.LoadElement(newTodolistElement(name,id,options...))}}
+	return TodosListElement{ui.BasicElement{doc.LoadElement(newTodolistElement(name, id, options...))}}
 }
 
-
-func NewTodoInput(name string,id string) doc.Input{
+func NewTodoInput(name string, id string) doc.Input {
 	todosinput := doc.NewInput("text", name, id)
 	doc.SetAttribute(todosinput.AsElement(), "placeholder", "What needs to be done?")
 	doc.SetAttribute(todosinput.AsElement(), "autofocus", "")
@@ -239,7 +247,7 @@ func NewTodoInput(name string,id string) doc.Input{
 
 	todosinput.AsElement().AddEventListener("change", ui.NewEventHandler(func(evt ui.Event) bool {
 		s := ui.String(evt.Value())
-		str:= strings.TrimSpace(string(s)) // Trim value
+		str := strings.TrimSpace(string(s)) // Trim value
 		todosinput.AsElement().SetDataSetUI("value", ui.String(str))
 		return false
 	}), doc.NativeEventBridge)
@@ -248,7 +256,7 @@ func NewTodoInput(name string,id string) doc.Input{
 		if evt.Value() == "Enter" {
 			evt.PreventDefault()
 			if todosinput.Value() != "" {
-				todosinput.AsElement().Set("event","newtodo", todosinput.Value())
+				todosinput.AsElement().Set("event", "newtodo", todosinput.Value())
 			}
 			todosinput.AsElement().SetDataSetUI("value", ui.String(""))
 			todosinput.Clear()
@@ -259,44 +267,43 @@ func NewTodoInput(name string,id string) doc.Input{
 	return todosinput
 }
 
-
 func main() {
 	// 1. Create a new document
 	Document := doc.NewDocument("Todo-App")
-	AppSection:= doc.NewSection("todoapp","todoapp")
-	AppFooter:= doc.NewFooter("infofooter","infofooter")
-	Document.SetChildren(AppSection,AppFooter)
+	AppSection := doc.NewSection("todoapp", "todoapp")
+	AppFooter := doc.NewFooter("infofooter", "infofooter")
+	Document.SetChildren(AppSection, AppFooter)
 
-		// 2. Build AppSection
-		MainHeader:= doc.NewHeader("header","header")
-		MainSection:= doc.NewSection("main","main")
-		MainFooter:= doc.NewFooter("footer","footer")
-		AppSection.SetChildren(MainHeader, MainSection, MainFooter)
+	// 2. Build AppSection
+	MainHeader := doc.NewHeader("header", "header")
+	MainSection := doc.NewSection("main", "main")
+	MainFooter := doc.NewFooter("footer", "footer")
+	AppSection.SetChildren(MainHeader, MainSection, MainFooter)
 
-			// 3. Build MainHeader
-			MainHeading:= doc.NewH1("todo","apptitle").SetText("Todo")
-			todosinput := NewTodoInput("todo", "new-todo")
-			MainHeader.SetChildren(MainHeading,todosinput)
+	// 3. Build MainHeader
+	MainHeading := doc.NewH1("todo", "apptitle").SetText("Todo")
+	todosinput := NewTodoInput("todo", "new-todo")
+	MainHeader.SetChildren(MainHeading, todosinput)
 
-			// 4. Build MainSection
-			ToggleAllInput := doc.NewInput("checkbox","toogle-all","toggle-all")
-			ToggleLabel:= doc.NewLabel("toggle-all-Label","toggle-all-label").For(ToggleAllInput.AsElement())
-			TodosList:= NewTodosListElement("todo-list","todo-list",doc.EnableSessionPersistence())
-			MainSection.SetChildren(ToggleAllInput,ToggleLabel,TodosList)
+	// 4. Build MainSection
+	ToggleAllInput := doc.NewInput("checkbox", "toogle-all", "toggle-all")
+	ToggleLabel := doc.NewLabel("toggle-all-Label", "toggle-all-label").For(ToggleAllInput.AsElement())
+	TodosList := NewTodosListElement("todo-list", "todo-list", doc.EnableSessionPersistence())
+	MainSection.SetChildren(ToggleAllInput, ToggleLabel, TodosList)
 
-			// 5. Build MainFooter
+	// 5. Build MainFooter
 
-		// x.Build AppFooter
+	// x.Build AppFooter
 
-		//css
-		doc.AddClass(AppSection.AsElement(),"todo-app")
-		doc.AddClass(AppFooter.AsElement(),"info")
-		doc.AddClass(MainHeader.AsElement(),"header")
-		doc.AddClass(MainSection.AsElement(),"main")
-		doc.AddClass(MainFooter.AsElement(),"footer")
-		doc.AddClass(todosinput.AsElement(),"new-todo")
-		doc.AddClass(ToggleAllInput.AsElement(),"toggle-all")
-		doc.AddClass(TodosList.AsElement(),"todo-list")
+	//css
+	doc.AddClass(AppSection.AsElement(), "todoapp")
+	doc.AddClass(AppFooter.AsElement(), "info")
+	doc.AddClass(MainHeader.AsElement(), "header")
+	doc.AddClass(MainSection.AsElement(), "main")
+	doc.AddClass(MainFooter.AsElement(), "footer")
+	doc.AddClass(todosinput.AsElement(), "new-todo")
+	doc.AddClass(ToggleAllInput.AsElement(), "toggle-all")
+	//doc.AddClass(TodosList.AsElement(),"todo-list")
 
 	// 4. Watch for new todos to insert
 	AppSection.AsElement().Watch("event", "newtodo", todosinput.AsElement(), ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
