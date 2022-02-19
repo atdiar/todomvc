@@ -105,7 +105,7 @@ func NewTodoElement(t Todo) TodoElement {
 		}))
 
 		li.AsElement().Watch("event", "toggle", li, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
-			res, ok := li.AsElement().Get("data", "todo")
+			res, ok := li.AsElement().GetData("todo")
 			if !ok {
 				return true
 			}
@@ -130,7 +130,7 @@ func NewTodoElement(t Todo) TodoElement {
 
 		b.AsElement().AddEventListener("click", ui.NewEventHandler(func(evt ui.Event) bool {
 			li.AsElement().Set("event", "delete", ui.Bool(true))
-			DEBUG("click")
+			DEBUG("click", evt.Target().ID)
 			return false
 		}), doc.NativeEventBridge)
 
@@ -176,14 +176,16 @@ func NewTodosListElement(name string, id string, options ...string) TodosListEle
 			// Handles list change, for instance, on new todo insertion
 			t.AsElement().DeleteChildren()
 			list := evt.NewValue().(ui.List) // TODO :  diff old list and new list
+			snapshotlist:=ui.NewList()
+			snapshotlist= append(snapshotlist,list...)
 
-			for _, v := range list {
+			for _, v := range snapshotlist {
 				// Let's get each todo
 				o := v.(Todo)
 				id, ok := o.Get("id")
 				if !ok {panic("Unexpected todo format")}
 				idstr := id.(ui.String)
-				DEBUG("SET WATCHER")
+
 				ntd := NewTodoElement(o).AsElement()
 				t.AsElement().AppendChild(ntd)
 
@@ -216,8 +218,9 @@ func NewTodosListElement(name string, id string, options ...string) TodosListEle
 					} else {
 						tdl = res.(ui.List)
 					}
-
-					for i, rawtodo := range tdl {
+					snapshottdl:= ui.NewList()
+					snapshottdl= append(snapshottdl,tdl...)
+					for i, rawtodo := range snapshottdl {
 						todo := rawtodo.(Todo)
 						oldid, _ := todo.Get("id")
 						if oldid == idstr {
