@@ -172,7 +172,7 @@ func NewTodosListElement(name string, id string, options ...string) TodosListEle
 		doc.AddClass(t.AsElement(), "todo-list")
 
 		t.AsElement().Watch("ui", "todoslist", t.AsElement(), ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
-			DEBUG("list update")
+			DEBUG("rendering  todolist")
 			// Handles list change, for instance, on new todo insertion
 			t.AsElement().DeleteChildren()
 			list := evt.NewValue().(ui.List) // TODO :  diff old list and new list
