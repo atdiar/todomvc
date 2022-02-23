@@ -63,7 +63,7 @@ func NewTodoElement(t Todo) TodoElement {
 
 		l := doc.NewLabel(id, id+"-lbl")
 
-		b := doc.NewButton("id", id+"-btn", "button")
+		b := doc.NewButton(id, id+"-btn", "button")
 		doc.AddClass(b.AsElement(), "destroy")
 
 		d.SetChildren(i, l, b)
@@ -172,7 +172,6 @@ func NewTodosListElement(name string, id string, options ...string) TodosListEle
 		doc.AddClass(t.AsElement(), "todo-list")
 
 		t.AsElement().Watch("ui", "todoslist", t.AsElement(), ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
-			DEBUG("rendering  todolist")
 			// Handles list change, for instance, on new todo insertion
 			t.AsElement().DeleteChildren()
 			list := evt.NewValue().(ui.List) // TODO :  diff old list and new list
@@ -242,6 +241,81 @@ func NewTodosListElement(name string, id string, options ...string) TodosListEle
 	return TodosListElement{ui.BasicElement{doc.LoadElement(newTodolistElement(name, id, options...))}}
 }
 
+type TodoCount struct{
+	ui.BasicElement
+}
+
+func(t TodoCount) SetCount(count int) TodoCount{
+	t.AsElement().SetDataSetUI("count",ui.Number(count))
+	return t
+}
+
+func NewTodoCount(name string,id string, options ...string) TodoCount{
+	newtodocount := doc.Elements.NewConstructor("todocount", func(name string, id string)*ui.Element{
+		s:= doc.NewSpan(name,id)
+		s.AsElement().Watch("ui","count",s.AsElement(), ui.NewMutationHandler(func(evt ui.MutationEvent)bool{
+				n,ok:= evt.NewValue().(ui.Number)
+				if !ok{
+					return true
+				}
+				nn:= int(n)
+				i:="item"
+				if nn>1{
+					i="items"
+				}
+				htmlstr:= "<strong>" + strings.Itoa(nn) + "<strong>" + " " + i +" left"
+				doc.SetInnerHTML(s.AsElement(),htmlstr)
+				return false
+		}))
+
+		doc.AddClass(s.AsElement(),"todo-count")
+		return s.AsElement()
+	}, doc.AllowSessionStoragePersistence, doc.AllowAppLocalStoragePersistence)
+	return TodoCount{ui.BasicElement{doc.LoadElement(newtodocount(name,id,options...))}}
+}
+
+type Filters struct{
+	ui.BasicElement
+}
+
+func NewFilter(name string,id string, u ui.Link) ui.BasicElement{
+	li:=doc.NewListItem(name,id)
+	a:= doc.Anchor(name,id+"-anchor")
+	li.AsElement().AppendChild(a)
+	a.AsElement().Watch("ui","active",a.AsElement(),ui.NewMutationHanler(func(evt ui.MutationEvent)bool{
+		b = evt.NewValue().(ui.Bool)
+		if b{
+			doc.AddClass(a.AsElement(),"selected")
+		} else{
+			doc.RemoveClass(a.AsElement(),"selected")
+		}
+		return false
+	}))
+	a.SetText(name)
+	return li.BasicElement
+}
+
+func(f Filters) SetFilterList(filters ...ui.BasicElement) Filters{
+	f.Set(filters...)
+	return f
+}
+
+func NewFilterList(name string, id string, options ...string) Filters{
+	newFilters:= doc.Elements.NewConstructor("filters",func(name string,id string)*ui.Element{
+		u:= doc.NewUl(name,id)
+		doc.AddClass(u.AsElement(),"filters")
+		return u.AsElement()
+	}, doc.AllowSessionStoragePersistence, doc.AllowAppLocalStoragePersistence)
+	return Filters{ui.BasicElement{doc.LoadElement(newFilters(name,id,options))}}
+}
+
+func ClearCompleteBtn(name string,id string) doc.Button{
+	b:= doc.NewButton(name,id,"button")
+	b.SetText("Clear completed")
+	doc.AddClass(b.AsElement(),"clear-completed")
+	return b
+}
+
 func NewTodoInput(name string, id string) doc.Input {
 	todosinput := doc.NewInput("text", name, id)
 	doc.SetAttribute(todosinput.AsElement(), "placeholder", "What needs to be done?")
@@ -295,6 +369,20 @@ func main() {
 	MainSection.SetChildren(ToggleAllInput, ToggleLabel, TodosList)
 
 	// 5. Build MainFooter
+	TodoCount := NewTodoCount("todo-count","todo-count")
+
+	FilterList := NewFilterList("filters","filters")
+	allFilter:= NewFilter("All","all-filter",...) // TODO Set LInk
+	activeFilter:= NewFilter("Active","active-filter", ...) // TODO
+	completedFilter:= NewFilter("Completed","completed-filter",...) // TODO
+	FilterList.SetFilterList(allFilter,activeFilter,completedFilter)
+
+	ClearCompleteButton:= ClearCompleteBtn("clear-complete","clear-complete")
+	ClearCompleteButton.AsElement().AddEventListener("click",ui.NewEventHandler(func(evt ui.Event)bool{
+		ClearCompleteButton.AsElement().Set("event","clear",ui.Bool(true))
+	}),doc.NativeEventBridge)
+
+	MainFooter.SetChildren(TodoCount,FilterList,ClearCompleteButton)
 
 	// x.Build AppFooter
 
@@ -323,6 +411,54 @@ func main() {
 
 		return false
 	}))
+
+	AppSection.AsElement().Watch("event", "clear", ClearCompleteButton.AsElement(), ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
+		TodosList.AsElement().SetDataSetUI("todoslist", ui.NewList())
+		return false
+	}))
+
+	AppSection.AsElement().Watch("data", "todoslist", TodosList.AsElement(), ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
+		tdl := TodosList.GetList()
+		l:= evt.NewValue().(ui.List) // we know it's a list, otherwise it can just panic, it's ok
+
+		if len(l) == 0{
+			doc.SetInlineCSS(Mainfooter.AsElement(),"display:none")
+		} else{
+			doc.SetInlineCSS(Mainfooter.AsElement(),"display:block")
+		}
+
+		countcomplete = 0
+		allcomplete:= true
+		for -,todo:=range l{
+			t:= todo.(Todo)
+			completed,ok:= t.Get("completed")
+			if !ok{
+				allcomplete = false
+			}
+			c:=ui.Bool(completed)
+			if !c{
+				allcomplete = false
+			} else{
+				countcomplete++
+			}
+		}
+
+		TodoCount.SetCount(countcomplete)
+
+		if countcomplete ==0{
+			doc.SetInlineCSS(ClearCompleteButton.AsElement(),"display:none")
+		} else{
+			doc.SetInlineCSS(ClearCompleteButton.AsElement(),"display:block")
+		}
+
+		if allcomplete{
+				ToggleAllInput.AsElement().Set("ui","checked",ui.Bool(true))
+		} else{
+			ToggleAllInput.AsElement().Set("ui","checked",ui.Bool(false))
+		}
+		return false
+	}))
+
 
 	c := make(chan struct{}, 0)
 	<-c
