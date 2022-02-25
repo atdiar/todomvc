@@ -364,6 +364,17 @@ func main() {
 
 	// 4. Build MainSection
 	ToggleAllInput := doc.NewInput("checkbox", "toogle-all", "toggle-all")
+	ToggleAllInput.AsElement().AddEventListener("click",ui.NewEventHandler(func(evt ui.Event)bool{
+		togglestate,ok := ToggleAllInput.AsElement().GetData("checked")
+		if !ok{
+			ToggleAllInput.AsElement().Set("event","toggled",ui.Bool(true))
+			return false
+		}
+		ts := togglestate.(ui.Bool)
+		ToggleAllInput.AsElement().Set("event","toggled",!ts)
+		return false
+	}),doc.NativeEventBridge)
+
 	ToggleLabel := doc.NewLabel("toggle-all-Label", "toggle-all-label").For(ToggleAllInput.AsElement())
 	TodosList := NewTodosListElement("todo-list", "todo-list", doc.EnableSessionPersistence())
 	MainSection.SetChildren(ToggleAllInput, ToggleLabel, TodosList)
@@ -418,7 +429,6 @@ func main() {
 	}))
 
 	AppSection.AsElement().Watch("data", "todoslist", TodosList.AsElement(), ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
-		tdl := TodosList.GetList()
 		l:= evt.NewValue().(ui.List) // we know it's a list, otherwise it can just panic, it's ok
 
 		if len(l) == 0{
@@ -452,13 +462,24 @@ func main() {
 		}
 
 		if allcomplete{
-				ToggleAllInput.AsElement().Set("ui","checked",ui.Bool(true))
+				ToggleAllInput.AsElement().SetDataSetUI("checked",ui.Bool(true))
 		} else{
-			ToggleAllInput.AsElement().Set("ui","checked",ui.Bool(false))
+			ToggleAllInput.AsElement().SetDataSetUI("checked",ui.Bool(false))
 		}
 		return false
 	}))
 
+	AppSection.AsElement().Watch("event","toggled",ToggleAllInput.AsElement(),ui.NewMutationHanler(func(evt ui.MutationEvent)bool{
+		status := evt.NewValue().(ui.Bool)
+		tdl := TodosList.GetList()
+		for i,todo:=range tdl{
+			t:= todo.(Todo)
+			t.Set("completed",status)
+			tdl[i] = t
+		}
+		TodosList.AsElement().SetDataSetUI("todoslist",tdl)
+		return false
+	}))
 
 	c := make(chan struct{}, 0)
 	<-c
