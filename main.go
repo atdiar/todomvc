@@ -2,7 +2,7 @@ package main
 
 import (
 	"log"
-	//"strconv"
+	"strconv"
 	"strings"
 	"time"
 
@@ -263,7 +263,7 @@ func NewTodoCount(name string,id string, options ...string) TodoCount{
 				if nn>1{
 					i="items"
 				}
-				htmlstr:= "<strong>" + strings.Itoa(nn) + "<strong>" + " " + i +" left"
+				htmlstr:= "<strong>" + strconv.Itoa(nn) + "<strong>" + " " + i +" left"
 				doc.SetInnerHTML(s.AsElement(),htmlstr)
 				return false
 		}))
@@ -280,10 +280,11 @@ type Filters struct{
 
 func NewFilter(name string,id string, u ui.Link) ui.BasicElement{
 	li:=doc.NewListItem(name,id)
-	a:= doc.Anchor(name,id+"-anchor")
+	a:= doc.NewAnchor(name,id+"-anchor")
+	a.FromLink(u)
 	li.AsElement().AppendChild(a)
-	a.AsElement().Watch("ui","active",a.AsElement(),ui.NewMutationHanler(func(evt ui.MutationEvent)bool{
-		b = evt.NewValue().(ui.Bool)
+	a.AsElement().Watch("ui","active",a.AsElement(),ui.NewMutationHandler(func(evt ui.MutationEvent)bool{
+		b := evt.NewValue().(ui.Bool)
 		if b{
 			doc.AddClass(a.AsElement(),"selected")
 		} else{
@@ -295,8 +296,8 @@ func NewFilter(name string,id string, u ui.Link) ui.BasicElement{
 	return li.BasicElement
 }
 
-func(f Filters) SetFilterList(filters ...ui.BasicElement) Filters{
-	f.Set(filters...)
+func(f Filters) SetFilterList(filters ...ui.AnyElement) Filters{
+	f.SetChildren(filters...)
 	return f
 }
 
@@ -306,7 +307,7 @@ func NewFilterList(name string, id string, options ...string) Filters{
 		doc.AddClass(u.AsElement(),"filters")
 		return u.AsElement()
 	}, doc.AllowSessionStoragePersistence, doc.AllowAppLocalStoragePersistence)
-	return Filters{ui.BasicElement{doc.LoadElement(newFilters(name,id,options))}}
+	return Filters{ui.BasicElement{doc.LoadElement(newFilters(name,id,options...))}}
 }
 
 func ClearCompleteBtn(name string,id string) doc.Button{
@@ -349,17 +350,20 @@ func main() {
 	Document := doc.NewDocument("Todo-App")
 	AppSection := doc.NewSection("todoapp", "todoapp")
 	AppFooter := doc.NewFooter("infofooter", "infofooter")
+
 	Document.SetChildren(AppSection, AppFooter)
 
 	// 2. Build AppSection
 	MainHeader := doc.NewHeader("header", "header")
 	MainSection := doc.NewSection("main", "main")
 	MainFooter := doc.NewFooter("footer", "footer")
+
 	AppSection.SetChildren(MainHeader, MainSection, MainFooter)
 
 	// 3. Build MainHeader
 	MainHeading := doc.NewH1("todo", "apptitle").SetText("Todo")
 	todosinput := NewTodoInput("todo", "new-todo")
+
 	MainHeader.SetChildren(MainHeading, todosinput)
 
 	// 4. Build MainSection
@@ -377,20 +381,28 @@ func main() {
 
 	ToggleLabel := doc.NewLabel("toggle-all-Label", "toggle-all-label").For(ToggleAllInput.AsElement())
 	TodosList := NewTodosListElement("todo-list", "todo-list", doc.EnableSessionPersistence())
+	todolistview:= ui.NewViewElement(TodosList.AsElement(),ui.NewView("all"),ui.NewView("active"),ui.NewView("completed"))
 	MainSection.SetChildren(ToggleAllInput, ToggleLabel, TodosList)
 
 	// 5. Build MainFooter
 	TodoCount := NewTodoCount("todo-count","todo-count")
 
 	FilterList := NewFilterList("filters","filters")
-	allFilter:= NewFilter("All","all-filter",...) // TODO Set LInk
-	activeFilter:= NewFilter("Active","active-filter", ...) // TODO
-	completedFilter:= NewFilter("Completed","completed-filter",...) // TODO
+	// links
+	router:= ui.NewRouter("/",todolistview)
+	linkall:= router.NewLink(todolistview,"all")
+	linkactive:= router.NewLink(todolistview,"active")
+	linkcompleted:= router.NewLink(todolistview,"completed")
+
+	allFilter:= NewFilter("All","all-filter",linkall) // TODO Set LInk
+	activeFilter:= NewFilter("Active","active-filter", linkactive) // TODO
+	completedFilter:= NewFilter("Completed","completed-filter",linkcompleted) // TODO
 	FilterList.SetFilterList(allFilter,activeFilter,completedFilter)
 
 	ClearCompleteButton:= ClearCompleteBtn("clear-complete","clear-complete")
 	ClearCompleteButton.AsElement().AddEventListener("click",ui.NewEventHandler(func(evt ui.Event)bool{
 		ClearCompleteButton.AsElement().Set("event","clear",ui.Bool(true))
+		return false
 	}),doc.NativeEventBridge)
 
 	MainFooter.SetChildren(TodoCount,FilterList,ClearCompleteButton)
@@ -432,20 +444,20 @@ func main() {
 		l:= evt.NewValue().(ui.List) // we know it's a list, otherwise it can just panic, it's ok
 
 		if len(l) == 0{
-			doc.SetInlineCSS(Mainfooter.AsElement(),"display:none")
+			doc.SetInlineCSS(MainFooter.AsElement(),"display:none")
 		} else{
-			doc.SetInlineCSS(Mainfooter.AsElement(),"display:block")
+			doc.SetInlineCSS(MainFooter.AsElement(),"display:block")
 		}
 
-		countcomplete = 0
+		countcomplete := 0
 		allcomplete:= true
-		for -,todo:=range l{
+		for _,todo:=range l{
 			t:= todo.(Todo)
 			completed,ok:= t.Get("completed")
 			if !ok{
 				allcomplete = false
 			}
-			c:=ui.Bool(completed)
+			c:=completed.(ui.Bool)
 			if !c{
 				allcomplete = false
 			} else{
@@ -469,7 +481,7 @@ func main() {
 		return false
 	}))
 
-	AppSection.AsElement().Watch("event","toggled",ToggleAllInput.AsElement(),ui.NewMutationHanler(func(evt ui.MutationEvent)bool{
+	AppSection.AsElement().Watch("event","toggled",ToggleAllInput.AsElement(),ui.NewMutationHandler(func(evt ui.MutationEvent)bool{
 		status := evt.NewValue().(ui.Bool)
 		tdl := TodosList.GetList()
 		for i,todo:=range tdl{
@@ -477,9 +489,11 @@ func main() {
 			t.Set("completed",status)
 			tdl[i] = t
 		}
-		TodosList.AsElement().SetDataSetUI("todoslist",tdl)
+		TodosList.SetList(tdl)
 		return false
 	}))
+
+	router.ListenAndServe("popstate",Document.AsElement(),doc.NativeEventBridge)
 
 	c := make(chan struct{}, 0)
 	<-c
