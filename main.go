@@ -61,6 +61,9 @@ func NewTodoElement(t Todo) TodoElement {
 		i := doc.NewInput("checkbox", "completed", id+"-completed")
 		doc.AddClass(i.AsElement(), "toggle")
 
+		edit := doc.NewInput("", "edit", id+"-edit")
+		doc.AddClass(edit.AsElement(), "edit")
+
 		l := doc.NewLabel(id, id+"-lbl")
 
 		b := doc.NewButton(id, id+"-btn", "button")
@@ -68,6 +71,13 @@ func NewTodoElement(t Todo) TodoElement {
 
 		d.SetChildren(i, l, b)
 		li := doc.NewListItem("li-"+id, "li-"+id).SetValue(d.AsElement())
+
+		edit.AsElement().Watch("ui","value",edit,ui.NewMutationHandler(func(evt ui.MutationEvent)bool{
+			s,ok:= evt.NewValue().(ui.String)
+			if !ok{return true}
+			doc.SetAttribute(edit.AsElement(),"value",string(s))
+			return false
+		}))
 
 		li.AsElement().Watch("ui", "todo", li, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 			t, ok := evt.NewValue().(ui.Object)
@@ -87,9 +97,9 @@ func NewTodoElement(t Todo) TodoElement {
 			todocompletebool := todocomplete.(ui.Bool)
 
 			if todocompletebool {
-				doc.AddClass(li.AsElement(), "complete")
+				doc.AddClass(li.AsElement(), "completed")
 			} else {
-				doc.RemoveClass(li.AsElement(), "complete")
+				doc.RemoveClass(li.AsElement(), "completed")
 			}
 
 			todotitle, ok := t.Get("title")
@@ -100,6 +110,7 @@ func NewTodoElement(t Todo) TodoElement {
 
 			i.AsElement().SetUI("checked", todocompletebool)
 			l.SetText(string(todotitlestr))
+			edit.AsElement().SetDataSetUI("value",todotitlestr)
 
 			return false
 		}))
@@ -123,8 +134,33 @@ func NewTodoElement(t Todo) TodoElement {
 			return false
 		}))
 
+		li.AsElement().Watch("event", "edit", li, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
+			li.AsElement().SetDataSetUI("editmode", ui.Bool(true))
+			return false
+		}))
+
+		li.AsElement().Watch("ui","editmode",li, ui.NewMutationHandler(func(evt ui.MutationEvent)bool{
+			m:= evt.NewValue().(ui.Bool)
+			if m {
+				doc.AddClass(li.AsElement(),"editing")
+				li.AsElement().AppendChild(edit.AsElement())
+				edit.Focus()
+			} else{
+				doc.RemoveClass(li.AsElement(),"editing")
+				li.AsElement().RemoveChild(edit.AsElement())
+				edit.Blur()
+			}
+
+			return false
+		}))
+
 		i.AsElement().AddEventListener("click", ui.NewEventHandler(func(evt ui.Event) bool {
 			li.AsElement().Set("event", "toggle", ui.Bool(true))
+			return false
+		}), doc.NativeEventBridge)
+
+		l.AsElement().AddEventListener("dblclick", ui.NewEventHandler(func(evt ui.Event) bool {
+			li.AsElement().Set("event", "edit", ui.Bool(true))
 			return false
 		}), doc.NativeEventBridge)
 
@@ -133,6 +169,44 @@ func NewTodoElement(t Todo) TodoElement {
 			DEBUG("click", evt.Target().ID)
 			return false
 		}), doc.NativeEventBridge)
+
+		edit.AsElement().AddEventListener("change", ui.NewEventHandler(func(evt ui.Event) bool {
+			s := ui.String(evt.Value())
+			str := strings.TrimSpace(string(s)) // Trim value
+			edit.AsElement().SetDataSetUI("value", ui.String(str))
+			return false
+		}), doc.NativeEventBridge)
+
+		edit.AsElement().AddEventListener("keyup", ui.NewEventHandler(func(evt ui.Event) bool {
+			if evt.Value() == "Escape"{
+				edit.AsElement().Set("event", "edit", ui.Bool(false))
+				return false
+			}
+
+			if evt.Value() == "Enter" {
+				evt.PreventDefault()
+				edit.AsElement().Set("event", "newtitle", edit.Value())
+				edit.AsElement().Set("event", "edit", ui.Bool(false))
+			}
+			return false
+		}), doc.NativeEventBridge)
+
+		li.AsElement().Watch("event","edit",edit,ui.NewMutationHandler(func(evt ui.MutationEvent)bool{
+				li.AsElement().Set("ui","editmode",evt.NewValue())
+				return false
+		}))
+
+		li.AsElement().Watch("event","newtitle",edit,ui.NewMutationHandler(func(evt ui.MutationEvent)bool{
+			res, ok := li.AsElement().GetData("todo")
+			if !ok {
+				return true
+			}
+			todo := res.(Todo)
+
+			todo.Set("title",evt.NewValue())
+			li.AsElement().SetDataSetUI("todo", todo)
+			return false
+		}))
 
 		return li.AsElement()
 
@@ -253,6 +327,12 @@ func NewTodosListElement(name string, id string, options ...string) TodosListEle
 					for i, rawtodo := range tdl {
 						todo := rawtodo.(Todo)
 						oldid, _ := todo.Get("id")
+						title,_:= todo.Get("title")
+						titlestr := title.(ui.String)
+						if len(titlestr) == 0{
+							t.AsElement().SetDataSetUI("todoslist", append(tdl[:i],tdl[i+1:]...)) // update state and refresh list representation
+							break
+						}
 						if oldid == idstr {
 							tdl[i] = evt.NewValue()
 							t.AsElement().SetDataSetUI("todoslist", tdl) // update state and refresh list representation
@@ -403,20 +483,17 @@ func main() {
 	Document := doc.NewDocument("Todo-App")
 	AppSection := doc.NewSection("todoapp", "todoapp")
 	AppFooter := doc.NewFooter("infofooter", "infofooter")
-
 	Document.SetChildren(AppSection, AppFooter)
 
 	// 2. Build AppSection
 	MainHeader := doc.NewHeader("header", "header")
 	MainSection := doc.NewSection("main", "main")
 	MainFooter := doc.NewFooter("footer", "footer")
-
 	AppSection.SetChildren(MainHeader, MainSection, MainFooter)
 
 	// 3. Build MainHeader
 	MainHeading := doc.NewH1("todo", "apptitle").SetText("Todo")
 	todosinput := NewTodoInput("todo", "new-todo")
-
 	MainHeader.SetChildren(MainHeading, todosinput)
 
 	// 4. Build MainSection
@@ -438,7 +515,6 @@ func main() {
 	if !ok{
 		panic("Expected TodosList to be constructed as a ViewElement")
 	}
-
 	MainSection.SetChildren(ToggleAllInput, ToggleLabel, TodosList)
 
 	// 5. Build MainFooter
@@ -468,7 +544,6 @@ func main() {
 		ClearCompleteButton.AsElement().Set("event","clear",ui.Bool(true))
 		return false
 	}),doc.NativeEventBridge)
-
 	MainFooter.SetChildren(TodoCount,FilterList,ClearCompleteButton)
 
 	// x.Build AppFooter
@@ -565,6 +640,16 @@ func main() {
 			tdl[i] = t
 		}
 		TodosList.SetList(tdl)
+		return false
+	}))
+
+	MainSection.AsElement().Watch("ui","todoslist",TodosList.AsElement(), ui.NewMutationHandler(func(evt ui.MutationEvent)bool{
+		tdl:= TodosList.GetList()
+		if len(tdl) == 0{
+			doc.SetInlineCSS(MainSection.AsElement(),"display : none")
+		} else{
+			doc.SetInlineCSS(MainSection.AsElement(),"display : block")
+		}
 		return false
 	}))
 
