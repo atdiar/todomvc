@@ -1,7 +1,6 @@
 package main
 
 import (
-
 	"github.com/atdiar/particleui"
 	"github.com/atdiar/particleui/drivers/js"
 )
@@ -9,11 +8,13 @@ import (
 // GOOS=js GOARCH=wasm go build -o  ../../app.wasm
 
 func main() {
+	// ***************** TREE BUILDING *******************************************
 
 	// 1. Create a new document
 	Document := doc.NewDocument("Todo-App")
 	AppSection := doc.NewSection("todoapp", "todoapp")
 	AppFooter := doc.NewFooter("infofooter", "infofooter")
+
 	Document.SetChildren(AppSection, AppFooter)
 
 	// 2. Build AppSection
@@ -25,27 +26,18 @@ func main() {
 	// 3. Build MainHeader
 	MainHeading := doc.NewH1("todo", "apptitle").SetText("Todo")
 	todosinput := NewTodoInput("todo", "new-todo")
+
 	MainHeader.SetChildren(MainHeading, todosinput)
 
 	// 4. Build MainSection
 	ToggleAllInput := doc.NewInput("checkbox", "toogle-all", "toggle-all")
-	ToggleAllInput.AsElement().AddEventListener("click", ui.NewEventHandler(func(evt ui.Event) bool {
-		togglestate, ok := ToggleAllInput.AsElement().GetData("checked")
-		if !ok {
-			ToggleAllInput.AsElement().Set("event", "toggled", ui.Bool(true))
-			return false
-		}
-		ts := togglestate.(ui.Bool)
-		ToggleAllInput.AsElement().Set("event", "toggled", !ts)
-		return false
-	}), doc.NativeEventBridge)
-
 	ToggleLabel := doc.NewLabel("toggle-all-Label", "toggle-all-label").For(ToggleAllInput.AsElement())
 	TodosList := NewTodosListElement("todo-list", "todo-list", doc.EnableLocalPersistence())
 	todolistview, ok := TodosList.AsViewElement()
 	if !ok {
 		panic("Expected TodosList to be constructed as a ViewElement")
 	}
+
 	MainSection.SetChildren(ToggleAllInput, ToggleLabel, TodosList)
 
 	// 5. Build MainFooter
@@ -65,23 +57,24 @@ func main() {
 	linkactive := router.NewLink(todolistview, "active")
 	linkcompleted := router.NewLink(todolistview, "completed")
 
-	allFilter := NewFilter("All", "all-filter", linkall)                         // TODO Set LInk
-	activeFilter := NewFilter("Active", "active-filter", linkactive)             // TODO
-	completedFilter := NewFilter("Completed", "completed-filter", linkcompleted) // TODO
+	allFilter := NewFilter("All", "all-filter", linkall)
+	activeFilter := NewFilter("Active", "active-filter", linkactive)
+	completedFilter := NewFilter("Completed", "completed-filter", linkcompleted)
 	FilterList.SetFilterList(allFilter, activeFilter, completedFilter)
 
 	ClearCompleteButton := ClearCompleteBtn("clear-complete", "clear-complete")
-	ClearCompleteButton.AsElement().AddEventListener("click", ui.NewEventHandler(func(evt ui.Event) bool {
-		ClearCompleteButton.AsElement().Set("event", "clear", ui.Bool(true))
-		return false
-	}), doc.NativeEventBridge)
+
 	MainFooter.SetChildren(TodoCount, FilterList, ClearCompleteButton)
 
 	// x.Build AppFooter
-	editinfo:=doc.NewParagraph("editinfo","editinfo").SetText("Double-click to edit a todo")
-	createdWith:= doc.NewParagraph("createdWith","createdWith").SetText("Created with: ").SetChildren(doc.NewAnchor("particleui","particleui").SetHREF("http://github.com/atdiar/particleui").SetText("ParticleUI"))
-	AppFooter.SetChildren(editinfo,createdWith)
-	//css
+	EditInfo := doc.NewParagraph("editinfo", "editinfo").SetText("Double-click to edit a todo")
+	CreatedWith := doc.NewParagraph("createdWith", "createdWith").SetText("Created with: ").SetChildren(doc.NewAnchor("particleui", "particleui").SetHREF("http://github.com/atdiar/particleui").SetText("ParticleUI"))
+
+	AppFooter.SetChildren(EditInfo, CreatedWith)
+
+
+	
+	// ***************** CSS *****************************************************
 	doc.AddClass(AppSection.AsElement(), "todoapp")
 	doc.AddClass(AppFooter.AsElement(), "info")
 	doc.AddClass(MainHeader.AsElement(), "header")
@@ -91,6 +84,7 @@ func main() {
 	doc.AddClass(ToggleAllInput.AsElement(), "toggle-all")
 	//doc.AddClass(TodosList.AsElement(),"todo-list")
 
+// ***************** EVENT HANDLERS / MUTATION OBSERVERS ***********************
 	// 4. Watch for new todos to insert
 	AppSection.AsElement().Watch("event", "newtodo", todosinput.AsElement(), ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 		tdl := TodosList.GetList()
@@ -186,6 +180,24 @@ func main() {
 		return false
 	}))
 
+	ToggleAllInput.AsElement().AddEventListener("click", ui.NewEventHandler(func(evt ui.Event) bool {
+		togglestate, ok := ToggleAllInput.AsElement().GetData("checked")
+		if !ok {
+			ToggleAllInput.AsElement().Set("event", "toggled", ui.Bool(true))
+			return false
+		}
+		ts := togglestate.(ui.Bool)
+		ToggleAllInput.AsElement().Set("event", "toggled", !ts)
+		return false
+	}), doc.NativeEventBridge)
+
+	ClearCompleteButton.AsElement().AddEventListener("click", ui.NewEventHandler(func(evt ui.Event) bool {
+		ClearCompleteButton.AsElement().Set("event", "clear", ui.Bool(true))
+		return false
+	}), doc.NativeEventBridge)
+
+
+	// Router start-up
 	router.ListenAndServe("popstate", Document.AsElement(), doc.NativeEventBridge)
 
 	c := make(chan struct{}, 0)
