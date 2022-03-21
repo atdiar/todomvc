@@ -81,7 +81,6 @@ func main() {
 	createdWith := doc.NewParagraph("createdWith", "createdWith").SetText("Created with: ").SetChildren(doc.NewAnchor("particleui", "particleui").SetHREF("http://github.com/atdiar/particleui").SetText("ParticleUI"))
 	AppFooter.SetChildren(editinfo, createdWith)
 
-
 	//css
 	doc.AddClass(AppSection.AsElement(), "todoapp")
 	doc.AddClass(AppFooter.AsElement(), "info")
@@ -171,8 +170,8 @@ func main() {
 		for _, todo := range tdl {
 			t := todo.(Todo)
 			t.Set("completed", status)
-			todo,_:= FindTodoElement(t)
-			todo.AsElement().SetDataSetUI("todo",t)
+			todo, _ := FindTodoElement(t)
+			todo.AsElement().SetDataSetUI("todo", t)
 		}
 		return false
 	}))
@@ -197,9 +196,6 @@ func main() {
 		return false
 	}))
 
-
 	router.ListenAndServe("popstate", Document.AsElement(), doc.NativeEventBridge)
 
-	c := make(chan struct{}, 0)
-	<-c
 }

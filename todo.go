@@ -23,21 +23,21 @@ type TodoElement struct {
 	ui.BasicElement
 }
 
-func FindTodoElement(t Todo) (TodoElement,bool) {
+func FindTodoElement(t Todo) (TodoElement, bool) {
 	todoid, ok := t.Get("id")
 	if !ok {
-		return TodoElement{},false
+		return TodoElement{}, false
 	}
 	todoidstr, ok := todoid.(ui.String)
 	if !ok {
-		return TodoElement{},false
+		return TodoElement{}, false
 	}
 
 	todo, ok := doc.Elements.ByID[string(todoidstr)]
-	if ok{
-		return TodoElement{ui.BasicElement{todo}},true
+	if ok {
+		return TodoElement{ui.BasicElement{todo}}, true
 	}
-	return TodoElement{ui.BasicElement{todo}},false
+	return TodoElement{ui.BasicElement{todo}}, false
 }
 
 func NewTodoElement(t Todo) TodoElement {
@@ -58,6 +58,7 @@ func NewTodoElement(t Todo) TodoElement {
 		doc.AddClass(i.AsElement(), "toggle")
 
 		edit := doc.NewInput("", name, id+"-edit")
+		ui.DEBUG("edit is created")
 		doc.AddClass(edit.AsElement(), "edit")
 
 		l := doc.NewLabel(name, id+"-lbl")
@@ -67,6 +68,11 @@ func NewTodoElement(t Todo) TodoElement {
 
 		d.SetChildren(i, l, b)
 		li := doc.NewListItem(name, id).SetValue(d.AsElement())
+
+		li.AsElement().OnDelete(ui.NewMutationHandler(func(evt ui.MutationEvent) bool { //TODO
+			// cleanup by deleting edit element
+			return false
+		}))
 
 		li.AsElement().Watch("ui", "todo", li, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 			t, ok := evt.NewValue().(ui.Object)
@@ -132,17 +138,21 @@ func NewTodoElement(t Todo) TodoElement {
 			m := evt.NewValue().(ui.Bool)
 			if m {
 				doc.AddClass(li.AsElement(), "editing")
+				ui.DEBUG("enter edit mode")
 				li.AsElement().AppendChild(edit.AsElement())
 				edit.Focus()
 			} else {
 				// edit.Blur()
+
 				doc.RemoveClass(li.AsElement(), "editing")
+				ui.DEBUG("escape edit mode")
 				li.AsElement().RemoveChild(edit.AsElement())
 			}
 			return false
 		}))
 
 		i.AsElement().AddEventListener("click", ui.NewEventHandler(func(evt ui.Event) bool {
+			//evt.PreventDefault()
 			li.AsElement().Set("event", "toggle", ui.Bool(true))
 			return false
 		}), doc.NativeEventBridge)
@@ -164,17 +174,22 @@ func NewTodoElement(t Todo) TodoElement {
 			return false
 		}), doc.NativeEventBridge)
 
-		edit.AsElement().AddEventListener("keydown", ui.NewEventHandler(func(evt ui.Event) bool {
+		/*edit.AsElement().AddEventListener("keydown", ui.NewEventHandler(func(evt ui.Event) bool {
 			if evt.Value() == "Escape" {
 				edit.AsElement().Set("event", "canceledit", ui.Bool(true))
 			}
 			return false
-		}), doc.NativeEventBridge)
+		}), doc.NativeEventBridge)*/
 
 		edit.AsElement().AddEventListener("keyup", ui.NewEventHandler(func(evt ui.Event) bool {
+			if evt.Value() == "Escape" {
+				evt.PreventDefault()
+				edit.AsElement().Set("event", "canceledit", ui.Bool(true))
+				return false
+			}
 			if evt.Value() == "Enter" {
 				evt.PreventDefault()
-				edit.AsElement().Set("event", "newtitle", edit.Value())
+				edit.Blur()
 			}
 			return false
 		}), doc.NativeEventBridge)
@@ -185,6 +200,7 @@ func NewTodoElement(t Todo) TodoElement {
 		}), doc.NativeEventBridge)
 
 		li.AsElement().Watch("event", "edit", edit, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
+			ui.DEBUG("setting edition mode ")
 			li.AsElement().Set("ui", "editmode", evt.NewValue())
 			return false
 		}))
@@ -195,10 +211,9 @@ func NewTodoElement(t Todo) TodoElement {
 				return true
 			}
 			todo := res.(Todo)
-
 			val, _ := todo.Get("title")
 			edit.AsElement().SetDataSetUI("value", val.(ui.String))
-			edit.AsElement().Set("event", "edit", ui.Bool(false))
+			edit.Blur()
 			return false
 		}))
 

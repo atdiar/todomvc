@@ -103,10 +103,14 @@ func NewTodosListElement(name string, id string, options ...string) TodosListEle
 					}
 				}
 
-				rntd,ok := FindTodoElement(o)
+				rntd, ok := FindTodoElement(o)
 				ntd := rntd.AsElement()
-				if !ok{
-					ntd= NewTodoElement(o).AsElement()
+				if ok {
+					ntd.SetUI("todo", o)
+				}
+				if !ok {
+					ui.DEBUG(ok)
+					ntd = NewTodoElement(o).AsElement()
 					t.AsElement().Watch("data", "todo", ntd, ui.NewMutationHandler(func(evt ui.MutationEvent) bool { // escalate back to the todolist the data changes issued at the todo Element level
 						var tdl ui.List
 						res, ok := t.AsElement().Get("data", "todoslist")
