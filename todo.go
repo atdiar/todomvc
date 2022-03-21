@@ -23,6 +23,23 @@ type TodoElement struct {
 	ui.BasicElement
 }
 
+func FindTodoElement(t Todo) (TodoElement,bool) {
+	todoid, ok := t.Get("id")
+	if !ok {
+		return TodoElement{},false
+	}
+	todoidstr, ok := todoid.(ui.String)
+	if !ok {
+		return TodoElement{},false
+	}
+
+	todo, ok := doc.Elements.ByID[string(todoidstr)]
+	if ok{
+		return TodoElement{ui.BasicElement{todo}},true
+	}
+	return TodoElement{ui.BasicElement{todo}},false
+}
+
 func NewTodoElement(t Todo) TodoElement {
 	todoid, ok := t.Get("id")
 	if !ok {
@@ -34,22 +51,22 @@ func NewTodoElement(t Todo) TodoElement {
 	}
 
 	newtodo := doc.Elements.NewConstructor("todo", func(name string, id string) *ui.Element {
-		d := doc.NewDiv(name, id)
+		d := doc.NewDiv(name, id+"-view")
 		doc.AddClass(d.AsElement(), "view")
 
-		i := doc.NewInput("checkbox", "completed", id+"-completed")
+		i := doc.NewInput("checkbox", name, id+"-completed")
 		doc.AddClass(i.AsElement(), "toggle")
 
-		edit := doc.NewInput("", "edit", id+"-edit")
+		edit := doc.NewInput("", name, id+"-edit")
 		doc.AddClass(edit.AsElement(), "edit")
 
-		l := doc.NewLabel(id, id+"-lbl")
+		l := doc.NewLabel(name, id+"-lbl")
 
-		b := doc.NewButton(id, id+"-btn", "button")
+		b := doc.NewButton(name, id+"-btn", "button")
 		doc.AddClass(b.AsElement(), "destroy")
 
 		d.SetChildren(i, l, b)
-		li := doc.NewListItem("li-"+id, "li-"+id).SetValue(d.AsElement())
+		li := doc.NewListItem(name, id).SetValue(d.AsElement())
 
 		li.AsElement().Watch("ui", "todo", li, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 			t, ok := evt.NewValue().(ui.Object)
@@ -203,7 +220,7 @@ func NewTodoElement(t Todo) TodoElement {
 
 	}, doc.AllowSessionStoragePersistence, doc.AllowAppLocalStoragePersistence)
 
-	ntd := doc.LoadElement(newtodo("todo-"+string(todoidstr), "todo-"+string(todoidstr)))
+	ntd := doc.LoadElement(newtodo("todo", string(todoidstr)))
 	ntd.SetDataSetUI("todo", t)
 
 	return TodoElement{ui.BasicElement{ntd}}

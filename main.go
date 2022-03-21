@@ -1,7 +1,6 @@
 package main
 
 import (
-
 	"github.com/atdiar/particleui"
 	"github.com/atdiar/particleui/drivers/js"
 )
@@ -28,7 +27,7 @@ func main() {
 	MainHeader.SetChildren(MainHeading, todosinput)
 
 	// 4. Build MainSection
-	ToggleAllInput := doc.NewInput("checkbox", "toogle-all", "toggle-all")
+	ToggleAllInput := doc.NewInput("checkbox", "toggle-all", "toggle-all")
 	ToggleAllInput.AsElement().AddEventListener("click", ui.NewEventHandler(func(evt ui.Event) bool {
 		togglestate, ok := ToggleAllInput.AsElement().GetData("checked")
 		if !ok {
@@ -65,9 +64,9 @@ func main() {
 	linkactive := router.NewLink(todolistview, "active")
 	linkcompleted := router.NewLink(todolistview, "completed")
 
-	allFilter := NewFilter("All", "all-filter", linkall)                         // TODO Set LInk
-	activeFilter := NewFilter("Active", "active-filter", linkactive)             // TODO
-	completedFilter := NewFilter("Completed", "completed-filter", linkcompleted) // TODO
+	allFilter := NewFilter("All", "all-filter", linkall)
+	activeFilter := NewFilter("Active", "active-filter", linkactive)
+	completedFilter := NewFilter("Completed", "completed-filter", linkcompleted)
 	FilterList.SetFilterList(allFilter, activeFilter, completedFilter)
 
 	ClearCompleteButton := ClearCompleteBtn("clear-complete", "clear-complete")
@@ -77,10 +76,12 @@ func main() {
 	}), doc.NativeEventBridge)
 	MainFooter.SetChildren(TodoCount, FilterList, ClearCompleteButton)
 
-	// x.Build AppFooter
-	editinfo:=doc.NewParagraph("editinfo","editinfo").SetText("Double-click to edit a todo")
-	createdWith:= doc.NewParagraph("createdWith","createdWith").SetText("Created with: ").SetChildren(doc.NewAnchor("particleui","particleui").SetHREF("http://github.com/atdiar/particleui").SetText("ParticleUI"))
-	AppFooter.SetChildren(editinfo,createdWith)
+	// 6.Build AppFooter
+	editinfo := doc.NewParagraph("editinfo", "editinfo").SetText("Double-click to edit a todo")
+	createdWith := doc.NewParagraph("createdWith", "createdWith").SetText("Created with: ").SetChildren(doc.NewAnchor("particleui", "particleui").SetHREF("http://github.com/atdiar/particleui").SetText("ParticleUI"))
+	AppFooter.SetChildren(editinfo, createdWith)
+
+
 	//css
 	doc.AddClass(AppSection.AsElement(), "todoapp")
 	doc.AddClass(AppFooter.AsElement(), "info")
@@ -124,7 +125,7 @@ func main() {
 	}))
 
 	AppSection.AsElement().Watch("data", "todoslist", TodosList.AsElement(), ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
-		l := evt.NewValue().(ui.List) // we know it's a list, otherwise it can just panic, it's ok
+		l := TodosList.GetList()
 
 		if len(l) == 0 {
 			doc.SetInlineCSS(MainFooter.AsElement(), "display:none")
@@ -167,12 +168,22 @@ func main() {
 	AppSection.AsElement().Watch("event", "toggled", ToggleAllInput.AsElement(), ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 		status := evt.NewValue().(ui.Bool)
 		tdl := TodosList.GetList()
-		for i, todo := range tdl {
+		for _, todo := range tdl {
 			t := todo.(Todo)
 			t.Set("completed", status)
-			tdl[i] = t
+			todo,_:= FindTodoElement(t)
+			todo.AsElement().SetDataSetUI("todo",t)
 		}
-		TodosList.SetList(tdl)
+		return false
+	}))
+
+	AppSection.AsElement().WatchASAP("event", "mounted", MainFooter.AsElement(), ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
+		tdl := TodosList.GetList()
+		if len(tdl) == 0 {
+			doc.SetInlineCSS(MainFooter.AsElement(), "display : none")
+		} else {
+			doc.SetInlineCSS(MainFooter.AsElement(), "display : block")
+		}
 		return false
 	}))
 
@@ -185,6 +196,7 @@ func main() {
 		}
 		return false
 	}))
+
 
 	router.ListenAndServe("popstate", Document.AsElement(), doc.NativeEventBridge)
 

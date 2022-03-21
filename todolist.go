@@ -36,6 +36,7 @@ func NewTodosListElement(name string, id string, options ...string) TodosListEle
 		tview.OnActivation("all", ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 			tview.AsElement().SetUI("filter", ui.String("all"))
 			// reload list
+			tview.AsElement().RemoveChildren()
 			res, ok := t.AsElement().Get("data", "todoslist")
 			if ok {
 				tdl := res.(ui.List)
@@ -46,6 +47,7 @@ func NewTodosListElement(name string, id string, options ...string) TodosListEle
 		tview.OnActivation("active", ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 			tview.AsElement().SetUI("filter", ui.String("active"))
 			// reload list
+			tview.AsElement().RemoveChildren()
 			res, ok := t.AsElement().Get("data", "todoslist")
 			if ok {
 				tdl := res.(ui.List)
@@ -56,6 +58,7 @@ func NewTodosListElement(name string, id string, options ...string) TodosListEle
 		tview.OnActivation("completed", ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 			tview.AsElement().SetUI("filter", ui.String("completed"))
 			// reload list
+			tview.AsElement().RemoveChildren()
 			res, ok := t.AsElement().Get("data", "todoslist")
 			if ok {
 				tdl := res.(ui.List)
@@ -66,9 +69,9 @@ func NewTodosListElement(name string, id string, options ...string) TodosListEle
 
 		t.AsElement().Watch("ui", "todoslist", t.AsElement(), ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 			// Handles list change, for instance, on new todo insertion
-			t.AsElement().DeleteChildren()
+			//t.AsElement().DeleteChildren()
 
-			list := evt.NewValue().(ui.List) // TODO :  diff old list and new list
+			list := evt.NewValue().(ui.List)
 			snapshotlist := ui.NewList()
 			snapshotlist = append(snapshotlist, list...)
 			filter := "all"
@@ -77,6 +80,8 @@ func NewTodosListElement(name string, id string, options ...string) TodosListEle
 				rf := f.(ui.String)
 				filter = string(rf)
 			}
+
+			newChildren := make([]ui.AnyElement, 0, len(list))
 
 			for _, v := range snapshotlist {
 				// Let's get each todo
@@ -98,59 +103,64 @@ func NewTodosListElement(name string, id string, options ...string) TodosListEle
 					}
 				}
 
-				ntd := NewTodoElement(o).AsElement()
-				t.AsElement().AppendChild(ntd)
-
-				t.AsElement().Watch("data", "todo", ntd, ui.NewMutationHandler(func(evt ui.MutationEvent) bool { // escalate back to the todolist the data changes issued at the todo Element level
-					var tdl ui.List
-					res, ok := t.AsElement().Get("data", "todoslist")
-					if !ok {
-						tdl = ui.NewList()
-					} else {
-						tdl = res.(ui.List)
-					}
-
-					for i, rawtodo := range tdl {
-						todo := rawtodo.(Todo)
-						oldid, _ := todo.Get("id")
-						title, _ := todo.Get("title")
-						titlestr := title.(ui.String)
-						if len(titlestr) == 0 {
-							t.AsElement().SetDataSetUI("todoslist", append(tdl[:i], tdl[i+1:]...)) // update state and refresh list representation
-							break
+				rntd,ok := FindTodoElement(o)
+				ntd := rntd.AsElement()
+				if !ok{
+					ntd= NewTodoElement(o).AsElement()
+					t.AsElement().Watch("data", "todo", ntd, ui.NewMutationHandler(func(evt ui.MutationEvent) bool { // escalate back to the todolist the data changes issued at the todo Element level
+						var tdl ui.List
+						res, ok := t.AsElement().Get("data", "todoslist")
+						if !ok {
+							tdl = ui.NewList()
+						} else {
+							tdl = res.(ui.List)
 						}
-						if oldid == idstr {
-							tdl[i] = evt.NewValue()
-							t.AsElement().SetDataSetUI("todoslist", tdl) // update state and refresh list representation
-							break
-						}
-					}
-					return false
-				}))
 
-				t.AsElement().Watch("event", "delete", ntd, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
-					var tdl ui.List
-					res, ok := t.AsElement().Get("data", "todoslist")
-					if !ok {
-						tdl = ui.NewList()
-					} else {
-						tdl = res.(ui.List)
-					}
-					snapshottdl := ui.NewList()
-					snapshottdl = append(snapshottdl, tdl...)
-					for i, rawtodo := range snapshottdl {
-						todo := rawtodo.(Todo)
-						oldid, _ := todo.Get("id")
-						if oldid == idstr {
-							tdl = append(tdl[:i], tdl[i+1:]...)
-							t.AsElement().SetDataSetUI("todoslist", tdl) // refresh list representation
-							break
+						for i, rawtodo := range tdl {
+							todo := rawtodo.(Todo)
+							oldid, _ := todo.Get("id")
+							title, _ := todo.Get("title")
+							titlestr := title.(ui.String)
+							if len(titlestr) == 0 {
+								t.AsElement().SetDataSetUI("todoslist", append(tdl[:i], tdl[i+1:]...)) // update state and refresh list representation
+								break
+							}
+							if oldid == idstr {
+								tdl[i] = evt.NewValue()
+								t.AsElement().SetDataSetUI("todoslist", tdl) // update state and refresh list representation
+								break
+							}
 						}
-					}
-					return false
-				}))
+						return false
+					}))
 
+					t.AsElement().Watch("event", "delete", ntd, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
+						var tdl ui.List
+						res, ok := t.AsElement().Get("data", "todoslist")
+						if !ok {
+							tdl = ui.NewList()
+						} else {
+							tdl = res.(ui.List)
+						}
+						snapshottdl := ui.NewList()
+						snapshottdl = append(snapshottdl, tdl...)
+						for i, rawtodo := range snapshottdl {
+							todo := rawtodo.(Todo)
+							oldid, _ := todo.Get("id")
+							if oldid == idstr {
+								tdl = append(tdl[:i], tdl[i+1:]...)
+								t.AsElement().SetDataSetUI("todoslist", tdl) // refresh list representation
+								break
+							}
+						}
+						return false
+					}))
+				}
+				//t.AsElement().AppendChild(ntd)
+				newChildren = append(newChildren, ntd)
 			}
+
+			t.AsElement().MergeChildren(newChildren...)
 			return false
 		}))
 
