@@ -109,7 +109,6 @@ func NewTodosListElement(name string, id string, options ...string) TodosListEle
 					ntd.SetUI("todo", o)
 				}
 				if !ok {
-					ui.DEBUG(ok)
 					ntd = NewTodoElement(o).AsElement()
 					t.AsElement().Watch("data", "todo", ntd, ui.NewMutationHandler(func(evt ui.MutationEvent) bool { // escalate back to the todolist the data changes issued at the todo Element level
 						var tdl ui.List
@@ -164,7 +163,7 @@ func NewTodosListElement(name string, id string, options ...string) TodosListEle
 				newChildren = append(newChildren, ntd)
 			}
 
-			t.AsElement().MergeChildren(newChildren...)
+			t.AsElement().SetMergeChildren(newChildren...)
 			return false
 		}))
 

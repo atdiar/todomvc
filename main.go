@@ -56,7 +56,7 @@ func main() {
 	router.OnRoutechangeRequest(ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 		route := evt.NewValue().(ui.String)
 		if string(route) == "/" {
-			router.RedirectTo("/all")
+			router.GoTo("/all")
 		}
 		return false
 	}))
@@ -196,6 +196,6 @@ func main() {
 		return false
 	}))
 
-	router.ListenAndServe("popstate", Document.AsElement(), doc.NativeEventBridge)
+	router.ListenAndServe("popstate", doc.GetWindow().AsElement(), doc.NativeEventBridge)
 
 }
