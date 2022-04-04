@@ -53,13 +53,7 @@ func main() {
 	FilterList := NewFilterList("filters", "filters")
 	// links
 	router := ui.NewRouter("/", todolistview)
-	router.OnRoutechangeRequest(ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
-		route := evt.NewValue().(ui.String)
-		if string(route) == "/" {
-			router.GoTo("/all")
-		}
-		return false
-	}))
+	router.Hijack("/","/all")
 	linkall := router.NewLink(todolistview, "all")
 	linkactive := router.NewLink(todolistview, "active")
 	linkcompleted := router.NewLink(todolistview, "completed")
