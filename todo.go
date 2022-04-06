@@ -68,10 +68,7 @@ func NewTodoElement(t Todo) TodoElement {
 		d.SetChildren(i, l, b)
 		li := doc.NewListItem(name, id).SetValue(d.AsElement())
 
-		li.AsElement().OnDelete(ui.NewMutationHandler(func(evt ui.MutationEvent) bool { //TODO
-			// cleanup by deleting edit element
-			return false
-		}))
+		edit.AsElement().ShareLifetimeOf(li)
 
 		li.AsElement().Watch("ui", "todo", li, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 			t, ok := evt.NewValue().(ui.Object)
