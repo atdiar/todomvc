@@ -144,6 +144,7 @@ func NewTodoElement(t Todo) TodoElement {
 		}))
 
 		i.AsElement().AddEventListener("click", ui.NewEventHandler(func(evt ui.Event) bool {
+			ui.DEBUG("Add click event listener")
 			//evt.PreventDefault()
 			li.AsElement().Set("event", "toggle", ui.Bool(true))
 			return false

@@ -53,7 +53,8 @@ func main() {
 	FilterList := NewFilterList("filters", "filters")
 	// links
 	router := ui.NewRouter("/", todolistview)
-	router.Hijack("/","/all")
+	router.Hijack("/", "/all")
+
 	linkall := router.NewLink(todolistview, "all")
 	linkactive := router.NewLink(todolistview, "active")
 	linkcompleted := router.NewLink(todolistview, "completed")
