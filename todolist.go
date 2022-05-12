@@ -69,11 +69,11 @@ func NewTodosListElement(name string, id string, options ...string) TodosListEle
 
 		t.AsElement().Watch("ui", "todoslist", t.AsElement(), ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 			// Handles list change, for instance, on new todo insertion
-			//t.AsElement().DeleteChildren()
+			t.AsElement().RemoveChildren() // TODO delete detached elements
 
 			list := evt.NewValue().(ui.List)
-			snapshotlist := ui.NewList()
-			snapshotlist = append(snapshotlist, list...)
+			//snapshotlist := ui.NewList()
+			//snapshotlist = append(snapshotlist, list...)
 			filter := "all"
 			f, ok := t.AsElement().Get("ui", "filter")
 			if ok {
@@ -81,9 +81,9 @@ func NewTodosListElement(name string, id string, options ...string) TodosListEle
 				filter = string(rf)
 			}
 
-			newChildren := make([]ui.AnyElement, 0, len(list))
+			newChildren := make([]*ui.Element, 0, len(list))
 
-			for _, v := range snapshotlist {
+			for _, v := range list {
 				// Let's get each todo
 				o := v.(Todo)
 				id, _ := o.Get("id")
@@ -125,12 +125,13 @@ func NewTodosListElement(name string, id string, options ...string) TodosListEle
 							title, _ := todo.Get("title")
 							titlestr := title.(ui.String)
 							if len(titlestr) == 0 {
-								t.AsElement().SetDataSetUI("todoslist", append(tdl[:i], tdl[i+1:]...)) // update state and refresh list representation
+								// t.AsElement().SetDataSetUI("todoslist", append(tdl[:i], tdl[i+1:]...)) // update state and refresh list representation
+								ntd.Set("event", "delete", ui.Bool(true))
 								break
 							}
 							if oldid == idstr {
 								tdl[i] = evt.NewValue()
-								t.AsElement().SetDataSetUI("todoslist", tdl) // update state and refresh list representation
+								t.AsElement().SyncUISetData("todoslist", tdl) // update state and refresh list representation TODO use Update method
 								break
 							}
 						}
@@ -152,7 +153,9 @@ func NewTodosListElement(name string, id string, options ...string) TodosListEle
 							oldid, _ := todo.Get("id")
 							if oldid == idstr {
 								tdl = append(tdl[:i], tdl[i+1:]...)
-								t.AsElement().SetDataSetUI("todoslist", tdl) // refresh list representation
+								//t.AsElement().SetDataSetUI("todoslist", tdl) // refresh list representation
+								ntd.Parent.DeleteChild(ntd)
+								t.AsElement().SyncUISetData("todoslist", tdl)
 								break
 							}
 						}
@@ -163,7 +166,7 @@ func NewTodosListElement(name string, id string, options ...string) TodosListEle
 				newChildren = append(newChildren, ntd)
 			}
 
-			t.AsElement().SetMergeChildren(newChildren...)
+			t.AsElement().SetChildrenElements(newChildren...)
 			return false
 		}))
 

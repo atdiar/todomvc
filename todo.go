@@ -109,19 +109,19 @@ func NewTodoElement(t Todo) TodoElement {
 		li.AsElement().Watch("event", "toggle", li, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 			res, ok := li.AsElement().GetData("todo")
 			if !ok {
-				return true
+				panic("Cannot find corresponding todo element.")
 			}
 			todo := res.(ui.Object)
 
 			b, ok := todo.Get("completed")
 			if !ok {
-				return true
+				panic("wrong todo format. Should have completed property")
 			}
 			complete := !(b.(ui.Bool))
 
-			todo.Set("completed", ui.Bool(complete))
+			newtodo := ui.Copy(todo).(ui.Object).Set("completed", ui.Bool(complete))
 
-			li.AsElement().SetDataSetUI("todo", todo)
+			li.AsElement().SetDataSetUI("todo", newtodo)
 			return false
 		}))
 
@@ -144,7 +144,6 @@ func NewTodoElement(t Todo) TodoElement {
 		}))
 
 		i.AsElement().AddEventListener("click", ui.NewEventHandler(func(evt ui.Event) bool {
-			ui.DEBUG("Add click event listener")
 			//evt.PreventDefault()
 			li.AsElement().Set("event", "toggle", ui.Bool(true))
 			return false
@@ -220,7 +219,7 @@ func NewTodoElement(t Todo) TodoElement {
 
 	}, doc.AllowSessionStoragePersistence, doc.AllowAppLocalStoragePersistence)
 
-	ntd := doc.LoadElement(newtodo("todo", string(todoidstr)))
+	ntd := doc.LoadElement(newtodo("todo", string(todoidstr))).Memoize()
 	ntd.SetDataSetUI("todo", t)
 
 	return TodoElement{ui.BasicElement{ntd}}

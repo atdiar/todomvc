@@ -162,12 +162,15 @@ func main() {
 	AppSection.AsElement().Watch("event", "toggled", ToggleAllInput.AsElement(), ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 		status := evt.NewValue().(ui.Bool)
 		tdl := TodosList.GetList()
-		for _, todo := range tdl {
+		for i, todo := range tdl {
 			t := todo.(Todo)
-			t.Set("completed", status)
-			todo, _ := FindTodoElement(t)
-			todo.AsElement().SetDataSetUI("todo", t)
+			c:= ui.Copy(t).(Todo)
+			c.Set("completed", status)
+			tdl[i]=c
+			//todo, _ := FindTodoElement(t)
+			//todo.AsElement().SetDataSetUI("todo", t)
 		}
+		TodosList.SetList(tdl)
 		return false
 	}))
 
