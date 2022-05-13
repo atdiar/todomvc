@@ -34,48 +34,50 @@ func NewTodosListElement(name string, id string, options ...string) TodosListEle
 
 		tview := ui.NewViewElement(t.AsElement(), ui.NewView("all"), ui.NewView("active"), ui.NewView("completed"))
 		tview.OnActivation("all", ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
-			tview.AsElement().SetUI("filter", ui.String("all"))
+			evt.Origin().SetUI("filter", ui.String("all"))
 			// reload list
-			tview.AsElement().RemoveChildren()
-			res, ok := t.AsElement().Get("data", "todoslist")
+			evt.Origin().RemoveChildren()
+			res, ok := evt.Origin().Get("data", "todoslist")
 			if ok {
 				tdl := res.(ui.List)
-				t.AsElement().SetDataSetUI("todoslist", tdl)
+				evt.Origin().SetDataSetUI("todoslist", tdl)
 			}
 			return false
 		}))
 		tview.OnActivation("active", ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
-			tview.AsElement().SetUI("filter", ui.String("active"))
+			evt.Origin().SetUI("filter", ui.String("active"))
 			// reload list
-			tview.AsElement().RemoveChildren()
-			res, ok := t.AsElement().Get("data", "todoslist")
+			evt.Origin().RemoveChildren()
+			res, ok := evt.Origin().Get("data", "todoslist")
 			if ok {
 				tdl := res.(ui.List)
-				t.AsElement().SetDataSetUI("todoslist", tdl)
+				evt.Origin().SetDataSetUI("todoslist", tdl)
 			}
 			return false
 		}))
 		tview.OnActivation("completed", ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
-			tview.AsElement().SetUI("filter", ui.String("completed"))
+			evt.Origin().SetUI("filter", ui.String("completed"))
 			// reload list
-			tview.AsElement().RemoveChildren()
-			res, ok := t.AsElement().Get("data", "todoslist")
+			evt.Origin().RemoveChildren()
+			res, ok := evt.Origin().Get("data", "todoslist")
 			if ok {
 				tdl := res.(ui.List)
-				t.AsElement().SetDataSetUI("todoslist", tdl)
+				evt.Origin().SetDataSetUI("todoslist", tdl)
 			}
 			return false
 		}))
 
 		t.AsElement().Watch("ui", "todoslist", t.AsElement(), ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
+			t:= evt.Origin()
 			// Handles list change, for instance, on new todo insertion
-			t.AsElement().RemoveChildren() // TODO delete detached elements
+			t.RemoveChildren() // TODO delete detached elements
+
 
 			list := evt.NewValue().(ui.List)
 			//snapshotlist := ui.NewList()
 			//snapshotlist = append(snapshotlist, list...)
 			filter := "all"
-			f, ok := t.AsElement().Get("ui", "filter")
+			f, ok := t.Get("ui", "filter")
 			if ok {
 				rf := f.(ui.String)
 				filter = string(rf)
@@ -110,9 +112,9 @@ func NewTodosListElement(name string, id string, options ...string) TodosListEle
 				}
 				if !ok {
 					ntd = NewTodoElement(o).AsElement()
-					t.AsElement().Watch("data", "todo", ntd, ui.NewMutationHandler(func(evt ui.MutationEvent) bool { // escalate back to the todolist the data changes issued at the todo Element level
+					t.Watch("data", "todo", ntd, ui.NewMutationHandler(func(evt ui.MutationEvent) bool { // escalate back to the todolist the data changes issued at the todo Element level
 						var tdl ui.List
-						res, ok := t.AsElement().Get("data", "todoslist")
+						res, ok := t.Get("data", "todoslist")
 						if !ok {
 							tdl = ui.NewList()
 						} else {
@@ -131,14 +133,14 @@ func NewTodosListElement(name string, id string, options ...string) TodosListEle
 							}
 							if oldid == idstr {
 								tdl[i] = evt.NewValue()
-								t.AsElement().SyncUISetData("todoslist", tdl) // update state and refresh list representation TODO use Update method
+								t.SyncUISetData("todoslist", tdl) // update state and refresh list representation TODO use Update method
 								break
 							}
 						}
 						return false
 					}))
 
-					t.AsElement().Watch("event", "delete", ntd, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
+					t.Watch("event", "delete", ntd, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 						var tdl ui.List
 						res, ok := t.AsElement().Get("data", "todoslist")
 						if !ok {
@@ -155,7 +157,7 @@ func NewTodosListElement(name string, id string, options ...string) TodosListEle
 								tdl = append(tdl[:i], tdl[i+1:]...)
 								//t.AsElement().SetDataSetUI("todoslist", tdl) // refresh list representation
 								ntd.Parent.DeleteChild(ntd)
-								t.AsElement().SyncUISetData("todoslist", tdl)
+								t.SyncUISetData("todoslist", tdl)
 								break
 							}
 						}
@@ -166,7 +168,7 @@ func NewTodosListElement(name string, id string, options ...string) TodosListEle
 				newChildren = append(newChildren, ntd)
 			}
 
-			t.AsElement().SetChildrenElements(newChildren...)
+			t.SetChildrenElements(newChildren...)
 			return false
 		}))
 
