@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -12,6 +13,8 @@ func main() {
 
 	fileServer := http.FileServer(http.Dir(staticPath))
 
+	log.Print("Listening on port :8080")
+
 	http.ListenAndServe(":8080", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		path, err := filepath.Abs(r.URL.Path)
 		if err != nil {
@@ -19,7 +22,7 @@ func main() {
 			return
 		}
 
-		path = filepath.Join(staticPath, path)
+		path = filepath.Join(staticPath, r.URL.Path)
 
 		_, err = os.Stat(path)
 		if os.IsNotExist(err) {
@@ -33,4 +36,4 @@ func main() {
 
 		fileServer.ServeHTTP(w, r)
 	}))
-} 
+}
