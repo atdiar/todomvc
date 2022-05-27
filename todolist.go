@@ -35,6 +35,7 @@ func NewTodosListElement(name string, id string, options ...string) TodosListEle
 		tview := ui.NewViewElement(t.AsElement(), ui.NewView("all"), ui.NewView("active"), ui.NewView("completed"))
 		tview.OnActivation("all", ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 			evt.Origin().SetUI("filter", ui.String("all"))
+			doc.GetWindow().SetTitle("TODOMVC-all")
 			// reload list
 			evt.Origin().RemoveChildren()
 			res, ok := evt.Origin().Get("data", "todoslist")
@@ -46,6 +47,7 @@ func NewTodosListElement(name string, id string, options ...string) TodosListEle
 		}))
 		tview.OnActivation("active", ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 			evt.Origin().SetUI("filter", ui.String("active"))
+			doc.GetWindow().SetTitle("TODOMVC-active")
 			// reload list
 			evt.Origin().RemoveChildren()
 			res, ok := evt.Origin().Get("data", "todoslist")
@@ -57,6 +59,7 @@ func NewTodosListElement(name string, id string, options ...string) TodosListEle
 		}))
 		tview.OnActivation("completed", ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 			evt.Origin().SetUI("filter", ui.String("completed"))
+			doc.GetWindow().SetTitle("TODOMVC-completed")
 			// reload list
 			evt.Origin().RemoveChildren()
 			res, ok := evt.Origin().Get("data", "todoslist")
