@@ -87,6 +87,7 @@ func NewTodosListElement(name string, id string, options ...string) TodosListEle
 			}
 
 			newChildren := make([]*ui.Element, 0, len(list))
+			childrenSet := make(map[ui.String]struct{},len(list))
 
 			for _, v := range list {
 				// Let's get each todo
@@ -95,6 +96,7 @@ func NewTodosListElement(name string, id string, options ...string) TodosListEle
 				idstr := id.(ui.String)
 				cplte, _ := o.Get("completed")
 				complete := cplte.(ui.Bool)
+				childrenSet[idstr]=struct{}{}
 
 				if filter == "active" {
 					if complete {
@@ -167,10 +169,23 @@ func NewTodosListElement(name string, id string, options ...string) TodosListEle
 						return false
 					}))
 				}
-				//t.AsElement().AppendChild(ntd)
 				newChildren = append(newChildren, ntd)
 			}
-
+			oldlist,ok:=evt.OldValue().(ui.List)
+			if ok{
+				for _,v:=range oldlist{
+					o := v.(Todo)
+					id, _ := o.Get("id")
+					idstr := id.(ui.String)
+					if _,ok:= childrenSet[idstr];!ok{
+						d,ok:= FindTodoElement(o)
+						if ok{
+							ui.Delete(d.AsElement())
+							doc.ClearFromStorage(d.AsElement())
+						}
+					}
+				}
+			}
 			t.SetChildrenElements(newChildren...)
 			return false
 		}))
@@ -178,5 +193,5 @@ func NewTodosListElement(name string, id string, options ...string) TodosListEle
 		return t.AsElement()
 	}, doc.AllowSessionStoragePersistence, doc.AllowAppLocalStoragePersistence)
 
-	return TodosListElement{ui.BasicElement{doc.LoadElement(newTodolistElement(name, id, options...))}}
+	return TodosListElement{ui.BasicElement{doc.LoadFromStorage(newTodolistElement(name, id, options...))}}
 }

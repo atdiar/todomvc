@@ -37,5 +37,5 @@ func NewTodoCount(name string, id string, options ...string) TodoCount {
 		doc.AddClass(s.AsElement(), "todo-count")
 		return s.AsElement()
 	}, doc.AllowSessionStoragePersistence, doc.AllowAppLocalStoragePersistence)
-	return TodoCount{ui.BasicElement{doc.LoadElement(newtodocount(name, id, options...))}}
+	return TodoCount{ui.BasicElement{doc.LoadFromStorage(newtodocount(name, id, options...))}}
 }

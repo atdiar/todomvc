@@ -219,7 +219,7 @@ func NewTodoElement(t Todo) TodoElement {
 
 	}, doc.AllowSessionStoragePersistence, doc.AllowAppLocalStoragePersistence)
 
-	ntd := doc.LoadElement(newtodo("todo", string(todoidstr))).Memoize()
+	ntd := doc.LoadFromStorage(newtodo("todo", string(todoidstr))).Memoize()
 	ntd.SetDataSetUI("todo", t)
 
 	return TodoElement{ui.BasicElement{ntd}}

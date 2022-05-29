@@ -5,7 +5,7 @@ import (
 	"github.com/atdiar/particleui/drivers/js"
 )
 
-// GOOS=js GOARCH=wasm go build -o  ../../app.wasm
+// GOOS=js GOARCH=wasm go build -o  server/assets/app.wasm
 
 func main() {
 

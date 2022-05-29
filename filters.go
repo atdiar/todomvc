@@ -38,7 +38,7 @@ func NewFilterList(name string, id string, options ...string) Filters {
 		doc.AddClass(u.AsElement(), "filters")
 		return u.AsElement()
 	}, doc.AllowSessionStoragePersistence, doc.AllowAppLocalStoragePersistence)
-	return Filters{ui.BasicElement{doc.LoadElement(newFilters(name, id, options...))}}
+	return Filters{ui.BasicElement{doc.LoadFromStorage(newFilters(name, id, options...))}}
 }
 
 func ClearCompleteBtn(name string, id string) doc.Button {
