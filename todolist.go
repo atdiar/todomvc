@@ -26,13 +26,30 @@ func (t TodosListElement) SetList(tdl ui.List) TodosListElement {
 	t.AsElement().SetDataSetUI("todoslist", tdl)
 	return t
 }
+func(t TodosListElement)AsViewElement() ui.ViewElement{
+	return ui.ViewElement{t.AsElement()}
+}
 
 func NewTodosListElement(name string, id string, options ...string) TodosListElement {
 	newTodolistElement := doc.Elements.NewConstructor("todoslist", func(name string, id string) *ui.Element {
-		t := doc.NewUl("todoslist", "todoslist")
+		t := doc.NewUl(name, id)
 		doc.AddClass(t.AsElement(), "todo-list")
 
 		tview := ui.NewViewElement(t.AsElement(), ui.NewView("all"), ui.NewView("active"), ui.NewView("completed"))
+		ui.UseRouter(t.AsElement(),func(r *ui.Router){
+			names:= ui.NewList(ui.String("all"), ui.String("active"), ui.String("completed"))
+			links:= ui.NewList(
+				ui.String(r.NewLink(tview,"all").URI()),
+				ui.String(r.NewLink(tview,"active").URI()),
+				ui.String(r.NewLink(tview,"completed").URI()),
+			)
+			filterslist:=ui.NewObject()
+			filterslist.Set("names",names)
+			filterslist.Set("urls",links)
+
+			t.AsElement().SetUI("filterslist",filterslist)
+		})
+		
 		tview.OnActivation("all", ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 			evt.Origin().SetUI("filter", ui.String("all"))
 			doc.GetWindow().SetTitle("TODOMVC-all")
@@ -181,7 +198,6 @@ func NewTodosListElement(name string, id string, options ...string) TodosListEle
 						d,ok:= FindTodoElement(o)
 						if ok{
 							ui.Delete(d.AsElement())
-							doc.ClearFromStorage(d.AsElement())
 						}
 					}
 				}
