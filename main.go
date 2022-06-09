@@ -18,120 +18,97 @@ var CSS = func(classes ...string) func(*ui.Element)*ui.Element{
 		return e
 	}
 }
-
-var InitRouter = func(e *ui.Element) *ui.Element{
-	e.OnFirstTimeMounted(ui.NewMutationHandler(func(evt ui.MutationEvent)bool{
-		v,ok:= evt.Origin().AsViewElement()
-		if !ok{
-			panic("Router cannot be instantiated with non-ViewElement objects")
-		}
-		router := ui.NewRouter("/",v ,doc.RouterConfig)
-		router.Hijack("/", "/all")
-		return false
-	}))
-	
-	return e
-}
+var Ref = ui.Ref
+var InitRouter = ui.InitRouter
+var Hijack = ui.Hijack
 
 
 func main() {
 	
+
+	var AppSection *ui.Element
+	var MainSection *ui.Element
+	var MainFooter *ui.Element
+	var todosinput *ui.Element
+	var ToggleAllInput *ui.Element
+	var TodosList *ui.Element
+	var TodoCount *ui.Element
+	var FilterList *ui.Element
+	var ClearCompleteButton *ui.Element
 	
-
-	// 1. Create a new document
-	Document := doc.NewDocument("Todo-App")
-	AppSection := doc.NewSection("todoapp", "todoapp")
-	AppFooter := doc.NewFooter("infofooter", "infofooter")
-
-	// 2. AppSection components
-	MainHeader := doc.NewHeader("header", "header")
-	MainSection := doc.NewSection("main", "main")
-	MainFooter := doc.NewFooter("footer", "footer")
-
-	// 3. MainHeader components
-	MainHeading := doc.NewH1("todo", "apptitle").SetText("Todo")
-	todosinput := NewTodoInput("todo", "new-todo")
-
-	// 4. MainSection componnents
-	ToggleAllInput := doc.NewInput("checkbox", "toggle-all", "toggle-all")
 	toggleallhandler:= ui.NewEventHandler(func(evt ui.Event) bool {
-		ToggleAllInput:= evt.Target()
-		togglestate, ok := ToggleAllInput.GetData("checked")
+		togglestate, ok := evt.Target().GetData("checked")
 		if !ok {
-			ToggleAllInput.Set("event", "toggled", ui.Bool(true))
+			evt.Target().Set("event", "toggled", ui.Bool(true))
 			return false
 		}
 		ts := togglestate.(ui.Bool)
-		ToggleAllInput.Set("event", "toggled", !ts)
+		evt.Target().Set("event", "toggled", !ts)
 		return false
 	})
 
-	ToggleLabel := doc.NewLabel("toggle-all-Label", "toggle-all-label").For(ToggleAllInput.AsElement())
-	TodosList := NewTodosListElement("todo-list", "todo-list", doc.EnableLocalPersistence())
-
-
-	// 5. MainFooter components
-	TodoCount := NewTodoCount("todo-count", "todo-count")
-
-	FilterList := NewFilterList("filters", "filters")
-
-
-	ClearCompleteButton := ClearCompleteBtn("clear-complete", "clear-complete")
 	ClearCompleteHandler := ui.NewEventHandler(func(evt ui.Event) bool {
 		ClearCompleteButton:= evt.Target()
 		ClearCompleteButton.Set("event", "clear", ui.Bool(true))
 		return false
 	})
+	
 
-	// 6.AppFooter components
-	editinfo := doc.NewParagraph("editinfo", "editinfo").SetText("Double-click to edit a todo")
-	createdWith := doc.NewParagraph("createdWith", "createdWith").SetText("Created with: ").SetChildren(doc.NewAnchor("particleui", "particleui").SetHREF("http://github.com/atdiar/particleui").SetText("ParticleUI"))
-
-
-	ui.New(Document,
+	ui.New(doc.NewDocument("Todo-App"),
 		Children(
-			E(AppSection,
+			E(doc.NewSection("todoapp", "todoapp"),
+				Ref(&AppSection),
 				CSS("todoapp"),
 				Children(
-					E(MainHeader,
+					E(doc.NewHeader("header", "header"),
 						CSS("header"),
 						Children(
-							E(MainHeading),
-							E(todosinput,
+							E(doc.NewH1("todo", "apptitle").SetText("Todo")),
+							E(NewTodoInput("todo", "new-todo"),
+								Ref(&todosinput),
 								CSS("new-todo"),
 							),
 						),
 					),
-					E(MainSection,
+					E(doc.NewSection("main", "main"),
+						Ref(&MainSection),
 						CSS("main"),
 						Children(
-							E(ToggleAllInput,
+							E(doc.NewInput("checkbox", "toggle-all", "toggle-all"),
+								Ref(&ToggleAllInput),
 								CSS("toggle-all"),
 								Listen("click",toggleallhandler,doc.NativeEventBridge),
 							),
-							E(ToggleLabel),
-							E(TodosList,
-								InitRouter,
+							E(doc.NewLabel("toggle-all-Label", "toggle-all-label").For(ToggleAllInput.AsElement())),
+							E(NewTodosListElement("todo-list", "todo-list", doc.EnableLocalPersistence()),
+								Ref(&TodosList),
+								InitRouter(Hijack("/","all"),doc.RouterConfig),
 							),
 						),
 					),
-					E(MainFooter,
+					E(doc.NewFooter("footer", "footer"),
+						Ref(&MainFooter),
 						CSS("footer"),
 						Children(
-							E(TodoCount),
-							E(FilterList),
-							E(ClearCompleteButton, 
+							E(NewTodoCount("todo-count", "todo-count"), Ref(&TodoCount)),
+							E(NewFilterList("filters", "filters"), Ref(&FilterList)),
+							E(ClearCompleteBtn("clear-complete", "clear-complete"),
+								Ref(&ClearCompleteButton),
 								Listen("click",ClearCompleteHandler,doc.NativeEventBridge),
 							),
 						),
 					),
 				),
 			),
-			E(AppFooter,
+			E(doc.NewFooter("infofooter", "infofooter"),
 				CSS("info"),
 				Children(
-					E(editinfo),
-					E(createdWith),
+					E(doc.NewParagraph("editinfo", "editinfo").SetText("Double-click to edit a todo")),
+					E(doc.NewParagraph("createdWith", "createdWith").SetText("Created with: "),
+						Children(
+							E(doc.NewAnchor("particleui", "particleui").SetHREF("http://github.com/atdiar/particleui").SetText("ParticleUI")),
+						),
+					),
 				),
 			),
 		),
@@ -140,11 +117,10 @@ func main() {
 
 	// COMPONENTS DATA RELATIONSHIPS
 
-
-
 	// 4. Watch for new todos to insert
 	AppSection.AsElement().Watch("event", "newtodo", todosinput.AsElement(), ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
-		tdl := TodosList.GetList()
+		tlist:= TodoListFromRef(TodosList)
+		tdl := tlist.GetList()
 
 		s, ok := evt.NewValue().(ui.String)
 		if !ok || s == "" {
@@ -153,13 +129,14 @@ func main() {
 		t := NewTodo(s)
 		tdl = append(tdl, t)
 
-		TodosList.AsElement().SetDataSetUI("todoslist", tdl)
+		tlist.SetList(tdl)
 
 		return false
 	}))
 
 	AppSection.AsElement().Watch("event", "clear", ClearCompleteButton.AsElement(), ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
-		tdl := TodosList.GetList()
+		tlist:= TodoListFromRef(TodosList)
+		tdl := tlist.GetList()
 		ntdl := ui.NewList()
 		for _, todo := range tdl {
 			t := todo.(Todo)
@@ -170,12 +147,13 @@ func main() {
 			}
 		}
 
-		TodosList.AsElement().SetDataSetUI("todoslist", ntdl)
+		tlist.SetList(tdl)
 		return false
 	}))
 
 	AppSection.AsElement().Watch("data", "todoslist", TodosList.AsElement(), ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
-		l := TodosList.GetList()
+		tlist:= TodoListFromRef(TodosList)
+		l := tlist.GetList()
 
 		if len(l) == 0 {
 			doc.SetInlineCSS(MainFooter.AsElement(), "display:none")
@@ -198,8 +176,8 @@ func main() {
 				countcomplete++
 			}
 		}
-
-		TodoCount.SetCount(len(l) - countcomplete)
+		tc:= TodoCountFromRef(TodoCount)
+		tc.SetCount(len(l) - countcomplete)
 
 		if countcomplete == 0 {
 			doc.SetInlineCSS(ClearCompleteButton.AsElement(), "display:none")
@@ -217,7 +195,9 @@ func main() {
 
 	AppSection.AsElement().Watch("event", "toggled", ToggleAllInput, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 		status := evt.NewValue().(ui.Bool)
-		tdl := TodosList.GetList()
+
+		tlist:= TodoListFromRef(TodosList)
+		tdl := tlist.GetList()
 		for i, todo := range tdl {
 			t := todo.(Todo)
 			c:= ui.Copy(t).(Todo)
@@ -226,12 +206,14 @@ func main() {
 			//todo, _ := FindTodoElement(t)
 			//todo.AsElement().SetDataSetUI("todo", t)
 		}
-		TodosList.SetList(tdl)
+		tlist.SetList(tdl)
 		return false
 	}))
 
 	AppSection.AsElement().WatchASAP("event", "mounted", MainFooter, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
-		tdl := TodosList.GetList()
+		
+		tlist:= TodoListFromRef(TodosList)
+		tdl := tlist.GetList()
 		if len(tdl) == 0 {
 			doc.SetInlineCSS(MainFooter.AsElement(), "display : none")
 		} else {
@@ -246,7 +228,8 @@ func main() {
 	}))
 
 	MainSection.AsElement().Watch("ui", "todoslist", TodosList, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
-		tdl := TodosList.GetList()
+		tlist:= TodoListFromRef(TodosList)
+		tdl := tlist.GetList()
 		if len(tdl) == 0 {
 			doc.SetInlineCSS(MainSection.AsElement(), "display : none")
 		} else {
@@ -256,5 +239,4 @@ func main() {
 	}))
 
 	ui.GetRouter().ListenAndServe("popstate", doc.GetWindow().AsElement(), doc.NativeEventBridge)
-
 }

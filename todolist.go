@@ -22,6 +22,10 @@ func (t TodosListElement) GetList() ui.List {
 	return tdl
 }
 
+func TodoListFromRef(ref *ui.Element) TodosListElement{
+	return TodosListElement{ui.BasicElement{ref}}
+}
+
 func (t TodosListElement) SetList(tdl ui.List) TodosListElement {
 	t.AsElement().SetDataSetUI("todoslist", tdl)
 	return t

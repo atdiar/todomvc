@@ -16,6 +16,10 @@ func (t TodoCount) SetCount(count int) TodoCount {
 	return t
 }
 
+func TodoCountFromRef(ref *ui.Element) TodoCount{
+	return TodoCount{ui.BasicElement{ref}}
+}
+
 func NewTodoCount(name string, id string, options ...string) TodoCount {
 	newtodocount := doc.Elements.NewConstructor("todocount", func(name string, id string) *ui.Element {
 		s := doc.NewSpan(name, id)
