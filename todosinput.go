@@ -14,14 +14,14 @@ func NewTodoInput(name string, id string) doc.Input {
 	doc.SetAttribute(todosinput.AsElement(), "onfocus", "this.value=''")
 
 	todosinput.AsElement().AddEventListener("change", ui.NewEventHandler(func(evt ui.Event) bool {
-		s := ui.String(evt.Value())
+		s := evt.Value().(ui.String)
 		str := strings.TrimSpace(string(s)) // Trim value
 		todosinput.AsElement().SetDataSetUI("value", ui.String(str))
 		return false
 	}), doc.NativeEventBridge)
 
 	todosinput.AsElement().AddEventListener("keyup", ui.NewEventHandler(func(evt ui.Event) bool {
-		if evt.Value() == "Enter" {
+		if v:=evt.Value().(ui.String); v == "Enter" {
 			evt.PreventDefault()
 			if todosinput.Value() != "" {
 				todosinput.AsElement().Set("event", "newtodo", todosinput.Value())

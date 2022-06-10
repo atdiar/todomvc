@@ -3,24 +3,10 @@ package main
 import (
 	"github.com/atdiar/particleui"
 	"github.com/atdiar/particleui/drivers/js"
+	. "github.com/atdiar/particleui/drivers/js/declarative"
 )
 
 // GOOS=js GOARCH=wasm go build -o  server/assets/app.wasm
-
-var Children = ui.Children
-var E = ui.New
-var Listen = ui.Listen
-var CSS = func(classes ...string) func(*ui.Element)*ui.Element{
-	return func(e *ui.Element) *ui.Element{
-		for _,class:= range classes{
-			doc.AddClass(e,class)
-		}
-		return e
-	}
-}
-var Ref = ui.Ref
-var InitRouter = ui.InitRouter
-var Hijack = ui.Hijack
 
 
 func main() {
@@ -52,9 +38,9 @@ func main() {
 		ClearCompleteButton.Set("event", "clear", ui.Bool(true))
 		return false
 	})
-	
 
-	ui.New(doc.NewDocument("Todo-App"),
+
+	New(doc.NewDocument("Todo-App"),
 		Children(
 			E(doc.NewSection("todoapp", "todoapp"),
 				Ref(&AppSection),

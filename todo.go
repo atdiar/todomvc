@@ -160,19 +160,19 @@ func NewTodoElement(t Todo) TodoElement {
 		}), doc.NativeEventBridge)
 
 		edit.AsElement().AddEventListener("change", ui.NewEventHandler(func(evt ui.Event) bool {
-			s := ui.String(evt.Value())
+			s:= evt.Value().(ui.String)
 			str := strings.TrimSpace(string(s)) // Trim value
 			edit.AsElement().SetDataSetUI("value", ui.String(str))
 			return false
 		}), doc.NativeEventBridge)
 
 		edit.AsElement().AddEventListener("keyup", ui.NewEventHandler(func(evt ui.Event) bool {
-			if evt.Value() == "Escape" {
+			if v:=evt.Value().(ui.String); v == "Escape" {
 				evt.PreventDefault()
 				edit.AsElement().Set("event", "canceledit", ui.Bool(true))
 				return false
 			}
-			if evt.Value() == "Enter" {
+			if v:=evt.Value().(ui.String);v == "Enter" {
 				evt.PreventDefault()
 				edit.Blur()
 			}
