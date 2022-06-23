@@ -43,9 +43,9 @@ func NewTodosListElement(name string, id string, options ...string) TodosListEle
 		ui.UseRouter(t.AsElement(),func(r *ui.Router){
 			names:= ui.NewList(ui.String("all"), ui.String("active"), ui.String("completed"))
 			links:= ui.NewList(
-				ui.String(r.NewLink(tview,"all").URI()),
-				ui.String(r.NewLink(tview,"active").URI()),
-				ui.String(r.NewLink(tview,"completed").URI()),
+				ui.String(r.NewLink("all").URI()),
+				ui.String(r.NewLink("active").URI()),
+				ui.String(r.NewLink("completed").URI()),
 			)
 			filterslist:=ui.NewObject()
 			filterslist.Set("names",names)
