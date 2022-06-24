@@ -68,7 +68,7 @@ func main() {
 							E(doc.NewLabel("toggle-all-Label", "toggle-all-label").For(ToggleAllInput.AsElement())),
 							E(NewTodosListElement("todo-list", "todo-list", doc.EnableLocalPersistence()),
 								Ref(&TodosList),
-								InitRouter(Hijack("/","all"),doc.RouterConfig),
+								InitRouter(Hijack("/","/all"),doc.RouterConfig),
 							),
 						),
 					),
