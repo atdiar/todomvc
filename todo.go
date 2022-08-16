@@ -147,42 +147,50 @@ func NewTodoElement(t Todo) TodoElement {
 			//evt.PreventDefault()
 			li.AsElement().Set("event", "toggle", ui.Bool(true))
 			return false
-		}), doc.NativeEventBridge)
+		}))
 
 		l.AsElement().AddEventListener("dblclick", ui.NewEventHandler(func(evt ui.Event) bool {
 			li.AsElement().Set("event", "edit", ui.Bool(true))
 			return false
-		}), doc.NativeEventBridge)
+		}))
 
 		b.AsElement().AddEventListener("click", ui.NewEventHandler(func(evt ui.Event) bool {
 			li.AsElement().Set("event", "delete", ui.Bool(true))
 			return false
-		}), doc.NativeEventBridge)
+		}))
 
 		edit.AsElement().AddEventListener("change", ui.NewEventHandler(func(evt ui.Event) bool {
-			s:= evt.Value().(ui.String)
+			v,ok:= evt.Value().(ui.Object).Get("value")
+			if !ok{
+				panic("framework error: unable to find change event value")
+			}
+			s:= v.(ui.String)
 			str := strings.TrimSpace(string(s)) // Trim value
 			edit.AsElement().SetDataSetUI("value", ui.String(str))
 			return false
-		}), doc.NativeEventBridge)
+		}))
 
 		edit.AsElement().AddEventListener("keyup", ui.NewEventHandler(func(evt ui.Event) bool {
-			if v:=evt.Value().(ui.String); v == "Escape" {
+			val,ok:= evt.Value().(ui.Object).Get("key")
+			if !ok{
+				panic("framework error: unable to find event key")
+			}
+			if v:=val.(ui.String); v == "Escape" {
 				evt.PreventDefault()
 				edit.AsElement().Set("event", "canceledit", ui.Bool(true))
 				return false
 			}
-			if v:=evt.Value().(ui.String);v == "Enter" {
+			if v:=val.(ui.String);v == "Enter" {
 				evt.PreventDefault()
 				edit.Blur()
 			}
 			return false
-		}), doc.NativeEventBridge)
+		}))
 
 		edit.AsElement().AddEventListener("blur", ui.NewEventHandler(func(evt ui.Event) bool {
 			edit.AsElement().Set("event", "newtitle", edit.Value())
 			return false
-		}), doc.NativeEventBridge)
+		}))
 
 		li.AsElement().Watch("event", "edit", edit, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 			li.AsElement().Set("ui", "editmode", evt.NewValue())
