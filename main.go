@@ -8,7 +8,6 @@ import (
 
 // GOOS=js GOARCH=wasm go build -o  server/assets/app.wasm
 
-
 func main() {
 	
 
@@ -39,9 +38,10 @@ func main() {
 		return false
 	})
 
-
-	New(doc.NewDocument("Todo-App"),
+	document:= doc.NewDocument("Todo-App")
+	ui.New(document.Body(),
 		Children(
+			E(doc.AriaChangeAnnouncer),
 			E(doc.NewSection("todoapp", "todoapp"),
 				Ref(&AppSection),
 				CSS("todoapp"),
@@ -63,7 +63,7 @@ func main() {
 							E(doc.NewInput("checkbox", "toggle-all", "toggle-all"),
 								Ref(&ToggleAllInput),
 								CSS("toggle-all"),
-								Listen("click",toggleallhandler,doc.NativeEventBridge),
+								Listen("click",toggleallhandler),
 							),
 							E(doc.NewLabel("toggle-all-Label", "toggle-all-label").For(ToggleAllInput.AsElement())),
 							E(NewTodosListElement("todo-list", "todo-list", doc.EnableLocalPersistence()),
@@ -80,7 +80,7 @@ func main() {
 							E(NewFilterList("filters", "filters"), Ref(&FilterList)),
 							E(ClearCompleteBtn("clear-complete", "clear-complete"),
 								Ref(&ClearCompleteButton),
-								Listen("click",ClearCompleteHandler,doc.NativeEventBridge),
+								Listen("click",ClearCompleteHandler),
 							),
 						),
 					),
@@ -224,5 +224,5 @@ func main() {
 		return false
 	}))
 
-	ui.GetRouter().ListenAndServe("popstate", doc.GetWindow().AsElement(), doc.NativeEventBridge)
+	ui.GetRouter().ListenAndServe("popstate", doc.GetWindow().AsElement())
 }
