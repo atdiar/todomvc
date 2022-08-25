@@ -10,8 +10,8 @@ type Filters struct {
 }
 
 func NewFilter(name string, id string, u ui.Link) ui.BasicElement {
-	li := doc.NewListItem(name, id)
-	a := doc.NewAnchor(name, id+"-anchor")
+	li := doc.NewListItem(id)
+	a := doc.NewAnchor(id+"-anchor")
 	a.FromLink(u)
 	li.AsElement().AppendChild(a)
 	a.AsElement().Watch("ui", "active", a.AsElement(), ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
@@ -27,14 +27,14 @@ func NewFilter(name string, id string, u ui.Link) ui.BasicElement {
 	return li.BasicElement
 }
 
-func NewFilterList(name string, id string, options ...string) Filters {
-	newFilters := doc.Elements.NewConstructor("filters", func(name string, id string) *ui.Element {
-		u := doc.NewUl(name, id)
+func NewFilterList(id string, options ...string) Filters {
+	newFilters := doc.Elements.NewConstructor("filters", func(id string) *ui.Element {
+		u := doc.NewUl( id)
 		doc.AddClass(u.AsElement(), "filters")
 		return u.AsElement()
 	}, doc.AllowSessionStoragePersistence, doc.AllowAppLocalStoragePersistence)
 
-	e:= newFilters(name, id, options...)
+	e:= newFilters( id, options...)
 
 	e.Watch("ui","filterslist",e, ui.NewMutationHandler(func(evt ui.MutationEvent)bool{
 		l:= evt.NewValue().(ui.Object)
@@ -68,8 +68,8 @@ func NewFilterList(name string, id string, options ...string) Filters {
 	return Filters{ui.BasicElement{doc.LoadFromStorage(e)}}
 }
 
-func ClearCompleteBtn(name string, id string) doc.Button {
-	b := doc.NewButton(name, id, "button")
+func ClearCompleteBtn(id string) doc.Button {
+	b := doc.NewButton(id, "button")
 	b.SetText("Clear completed")
 	doc.AddClass(b.AsElement(), "clear-completed")
 	return b

@@ -39,46 +39,49 @@ func main() {
 	})
 
 	document:= doc.NewDocument("Todo-App")
+	defer document.ListenAndServe()
+
+
 	ui.New(document.Body(),
 		Children(
 			E(doc.AriaChangeAnnouncer),
-			E(doc.NewSection("todoapp", "todoapp"),
+			E(doc.NewSection("todoapp"),
 				Ref(&AppSection),
 				CSS("todoapp"),
 				Children(
-					E(doc.NewHeader("header", "header"),
+					E(doc.NewHeader("header"),
 						CSS("header"),
 						Children(
-							E(doc.NewH1("todo", "apptitle").SetText("Todo")),
-							E(NewTodoInput("todo", "new-todo"),
+							E(doc.NewH1("apptitle").SetText("Todo")),
+							E(NewTodoInput("new-todo"),
 								Ref(&todosinput),
 								CSS("new-todo"),
 							),
 						),
 					),
-					E(doc.NewSection("main", "main"),
+					E(doc.NewSection("main"),
 						Ref(&MainSection),
 						CSS("main"),
 						Children(
-							E(doc.NewInput("checkbox", "toggle-all", "toggle-all"),
+							E(doc.NewInput("checkbox","toggle-all"),
 								Ref(&ToggleAllInput),
 								CSS("toggle-all"),
 								Listen("click",toggleallhandler),
 							),
-							E(doc.NewLabel("toggle-all-Label", "toggle-all-label").For(ToggleAllInput.AsElement())),
-							E(NewTodosListElement("todo-list", "todo-list", doc.EnableLocalPersistence()),
+							E(doc.NewLabel("toggle-all-label").For(ToggleAllInput.AsElement())),
+							E(NewTodosListElement("todo-list", doc.EnableLocalPersistence()),
 								Ref(&TodosList),
 								InitRouter(Hijack("/","/all"),doc.RouterConfig),
 							),
 						),
 					),
-					E(doc.NewFooter("footer", "footer"),
+					E(doc.NewFooter("footer"),
 						Ref(&MainFooter),
 						CSS("footer"),
 						Children(
-							E(NewTodoCount("todo-count", "todo-count"), Ref(&TodoCount)),
-							E(NewFilterList("filters", "filters"), Ref(&FilterList)),
-							E(ClearCompleteBtn("clear-complete", "clear-complete"),
+							E(NewTodoCount("todo-count"), Ref(&TodoCount)),
+							E(NewFilterList("filters"), Ref(&FilterList)),
+							E(ClearCompleteBtn("clear-complete"),
 								Ref(&ClearCompleteButton),
 								Listen("click",ClearCompleteHandler),
 							),
@@ -86,13 +89,13 @@ func main() {
 					),
 				),
 			),
-			E(doc.NewFooter("infofooter", "infofooter"),
+			E(doc.NewFooter("infofooter"),
 				CSS("info"),
 				Children(
-					E(doc.NewParagraph("editinfo", "editinfo").SetText("Double-click to edit a todo")),
-					E(doc.NewParagraph("createdWith", "createdWith").SetText("Created with: "),
+					E(doc.NewParagraph("editinfo").SetText("Double-click to edit a todo")),
+					E(doc.NewParagraph("createdWith").SetText("Created with: "),
 						Children(
-							E(doc.NewAnchor("particleui", "particleui").SetHREF("http://github.com/atdiar/particleui").SetText("ParticleUI")),
+							E(doc.NewAnchor("particleui").SetHREF("http://github.com/atdiar/particleui").SetText("ParticleUI")),
 						),
 					),
 				),
@@ -196,7 +199,7 @@ func main() {
 		return false
 	}))
 
-	AppSection.AsElement().WatchASAP("event", "mounted", MainFooter, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
+	AppSection.AsElement().Watch("event", "mounted", MainFooter, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 		
 		tlist:= TodoListFromRef(TodosList)
 		tdl := tlist.GetList()
@@ -206,12 +209,12 @@ func main() {
 			doc.SetInlineCSS(MainFooter.AsElement(), "display : block")
 		}
 		return false
-	}))
+	}).RunASAP())
 
-	AppSection.AsElement().WatchASAP("ui","filterslist",TodosList,ui.NewMutationHandler(func(evt ui.MutationEvent)bool{
+	AppSection.AsElement().Watch("ui","filterslist",TodosList,ui.NewMutationHandler(func(evt ui.MutationEvent)bool{
 		FilterList.AsElement().SetUI("filterslist",evt.NewValue())
 		return false
-	}))
+	}).RunASAP())
 
 	MainSection.AsElement().Watch("ui", "todoslist", TodosList, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 		tlist:= TodoListFromRef(TodosList)
@@ -224,5 +227,4 @@ func main() {
 		return false
 	}))
 
-	ui.GetRouter().ListenAndServe("popstate", doc.GetWindow().AsElement())
 }

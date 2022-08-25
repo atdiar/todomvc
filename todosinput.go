@@ -7,25 +7,16 @@ import (
 	"github.com/atdiar/particleui/drivers/js"
 )
 
-func NewTodoInput(name string, id string) doc.Input {
-	todosinput := doc.NewInput("text", name, id)
+func NewTodoInput(id string) doc.Input {
+	todosinput := doc.NewInput("text", id)
 	doc.SetAttribute(todosinput.AsElement(), "placeholder", "What needs to be done?")
 	//doc.SetAttribute(todosinput.AsElement(), "autofocus", "")
 	doc.SetAttribute(todosinput.AsElement(), "onfocus", "this.value=''")
 	
-	/*todosinput.AsElement().OnFirstTimeMounted(ui.NewMutationHandler(func(evt ui.MutationEvent)bool{
-		evt.Origin().Watch("event","navigationend",evt.Origin().Root(),ui.NewMutationHandler(func(evt ui.MutationEvent)bool{
-			doc.FocusAndScrollOnlyIfNecessary(evt.Origin())
-			return false
-		}))
-		
-		return false
-	}))*/
 	doc.Autofocus(todosinput.AsElement())
 
 	todosinput.AsElement().AddEventListener("change", ui.NewEventHandler(func(evt ui.Event) bool {
 		v,ok:= evt.Value().(ui.Object).Get("value")
-		ui.DEBUG(evt.Value().(ui.Object))
 		if !ok{
 			panic("framework error: unable to find change event value")
 		}

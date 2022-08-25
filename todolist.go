@@ -34,9 +34,9 @@ func(t TodosListElement)AsViewElement() ui.ViewElement{
 	return ui.ViewElement{t.AsElement()}
 }
 
-func NewTodosListElement(name string, id string, options ...string) TodosListElement {
-	newTodolistElement := doc.Elements.NewConstructor("todoslist", func(name string, id string) *ui.Element {
-		t := doc.NewUl(name, id)
+func NewTodosListElement(id string, options ...string) TodosListElement {
+	newTodolistElement := doc.Elements.NewConstructor("todoslist", func(id string) *ui.Element {
+		t := doc.NewUl(id)
 		doc.AddClass(t.AsElement(), "todo-list")
 
 		tview := ui.NewViewElement(t.AsElement(), ui.NewView("all"), ui.NewView("active"), ui.NewView("completed"))
@@ -213,5 +213,5 @@ func NewTodosListElement(name string, id string, options ...string) TodosListEle
 		return t.AsElement()
 	}, doc.AllowSessionStoragePersistence, doc.AllowAppLocalStoragePersistence)
 
-	return TodosListElement{ui.BasicElement{doc.LoadFromStorage(newTodolistElement(name, id, options...))}}
+	return TodosListElement{ui.BasicElement{doc.LoadFromStorage(newTodolistElement(id, options...))}}
 }
