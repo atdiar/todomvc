@@ -10,8 +10,8 @@ type Filters struct {
 }
 
 func NewFilter(name string, id string, u ui.Link) ui.BasicElement {
-	li := doc.NewListItem(id)
-	a := doc.NewAnchor(id+"-anchor")
+	li := doc.Li(id)
+	a := doc.Anchor(id+"-anchor")
 	a.FromLink(u)
 	li.AsElement().AppendChild(a)
 	a.AsElement().Watch("ui", "active", a.AsElement(), ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
@@ -29,7 +29,7 @@ func NewFilter(name string, id string, u ui.Link) ui.BasicElement {
 
 func NewFilterList(id string, options ...string) Filters {
 	newFilters := doc.Elements.NewConstructor("filters", func(id string) *ui.Element {
-		u := doc.NewUl( id)
+		u := doc.Ul( id)
 		doc.AddClass(u.AsElement(), "filters")
 		return u.AsElement()
 	}, doc.AllowSessionStoragePersistence, doc.AllowAppLocalStoragePersistence)
@@ -68,8 +68,8 @@ func NewFilterList(id string, options ...string) Filters {
 	return Filters{ui.BasicElement{doc.LoadFromStorage(e)}}
 }
 
-func ClearCompleteBtn(id string) doc.Button {
-	b := doc.NewButton(id, "button")
+func ClearCompleteBtn(id string) doc.ButtonElement {
+	b := doc.Button(id, "button")
 	b.SetText("Clear completed")
 	doc.AddClass(b.AsElement(), "clear-completed")
 	return b
