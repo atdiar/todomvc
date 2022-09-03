@@ -7,8 +7,8 @@ import (
 	"github.com/atdiar/particleui/drivers/js"
 )
 
-func NewTodoInput(id string) doc.Input {
-	todosinput := doc.NewInput("text", id)
+func NewTodoInput(id string) doc.InputElement {
+	todosinput := doc.Input("text", id)
 	doc.SetAttribute(todosinput.AsElement(), "placeholder", "What needs to be done?")
 	//doc.SetAttribute(todosinput.AsElement(), "autofocus", "")
 	doc.SetAttribute(todosinput.AsElement(), "onfocus", "this.value=''")

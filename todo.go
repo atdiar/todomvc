@@ -51,22 +51,22 @@ func NewTodoElement(t Todo) TodoElement {
 	}
 
 	newtodo := doc.Elements.NewConstructor("todo", func(id string) *ui.Element {
-		d := doc.NewDiv(id+"-view")
+		d := doc.Div(id+"-view")
 		doc.AddClass(d.AsElement(), "view")
 
-		i := doc.NewInput("checkbox", id+"-completed")
+		i := doc.Input("checkbox", id+"-completed")
 		doc.AddClass(i.AsElement(), "toggle")
 
-		edit := doc.NewInput("", id+"-edit")
+		edit := doc.Input("", id+"-edit")
 		doc.AddClass(edit.AsElement(), "edit")
 
-		l := doc.NewLabel(id+"-lbl")
+		l := doc.Label(id+"-lbl")
 
-		b := doc.NewButton(id+"-btn", "button")
+		b := doc.Button(id+"-btn", "button")
 		doc.AddClass(b.AsElement(), "destroy")
 
 		d.SetChildren(i, l, b)
-		li := doc.NewListItem(id).SetValue(d.AsElement())
+		li := doc.Li(id).SetValue(d.AsElement())
 
 		edit.AsElement().ShareLifetimeOf(li)
 
@@ -227,7 +227,7 @@ func NewTodoElement(t Todo) TodoElement {
 
 	}, doc.AllowSessionStoragePersistence, doc.AllowAppLocalStoragePersistence)
 
-	ntd := doc.LoadFromStorage(newtodo(string(todoidstr))).Memoize()
+	ntd := doc.LoadFromStorage(newtodo(string(todoidstr)))
 	ntd.SetDataSetUI("todo", t)
 
 	return TodoElement{ui.BasicElement{ntd}}
