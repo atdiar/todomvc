@@ -68,7 +68,7 @@ func main() {
 								CSS("toggle-all"),
 								Listen("click",toggleallhandler),
 							),
-							E(doc.Label("toggle-all-label").For(ToggleAllInput.AsElement().ID)),
+							E(doc.Label("toggle-all-label").For("toggle-all")),
 							E(NewTodosListElement("todo-list", doc.EnableLocalPersistence()),
 								Ref(&TodosList),
 								InitRouter(Hijack("/","/all"),doc.RouterConfig),
@@ -136,7 +136,7 @@ func main() {
 			}
 		}
 
-		tlist.SetList(tdl)
+		tlist.SetList(ntdl)
 		return false
 	}))
 
@@ -186,12 +186,12 @@ func main() {
 		status := evt.NewValue().(ui.Bool)
 
 		tlist:= TodoListFromRef(TodosList)
+
 		tdl := tlist.GetList()
 		for i, todo := range tdl {
 			t := todo.(Todo)
-			c:= ui.Copy(t).(Todo)
-			c.Set("completed", status)
-			tdl[i]=c
+			t.Set("completed", status)
+			tdl[i]=t
 			//todo, _ := FindTodoElement(t)
 			//todo.AsElement().SetDataSetUI("todo", t)
 		}
@@ -225,6 +225,6 @@ func main() {
 			doc.SetInlineCSS(MainSection.AsElement(), "display : block")
 		}
 		return false
-	}))
+	}).RunASAP())
 
 }

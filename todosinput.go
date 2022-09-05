@@ -27,6 +27,7 @@ func NewTodoInput(id string) doc.InputElement {
 	}))
 
 	todosinput.AsElement().AddEventListener("keyup", ui.NewEventHandler(func(evt ui.Event) bool {
+		todosinput := doc.InputElement{ui.BasicElement{evt.CurrentTarget()}}
 		val,ok:= evt.Value().(ui.Object).Get("key")
 		if !ok{
 			panic("framework error: unable to find event key")

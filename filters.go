@@ -27,14 +27,9 @@ func NewFilter(name string, id string, u ui.Link) ui.BasicElement {
 	return li.BasicElement
 }
 
-func NewFilterList(id string, options ...string) Filters {
-	newFilters := doc.Elements.NewConstructor("filters", func(id string) *ui.Element {
-		u := doc.Ul( id)
-		doc.AddClass(u.AsElement(), "filters")
-		return u.AsElement()
-	}, doc.AllowSessionStoragePersistence, doc.AllowAppLocalStoragePersistence)
-
-	e:= newFilters( id, options...)
+var newFilters = doc.Elements.NewConstructor("filters", func(id string) *ui.Element {
+	e := doc.Ul(id).AsElement()
+	doc.AddClass(e, "filters")
 
 	e.Watch("ui","filterslist",e, ui.NewMutationHandler(func(evt ui.MutationEvent)bool{
 		l:= evt.NewValue().(ui.Object)
@@ -51,7 +46,7 @@ func NewFilterList(id string, options ...string) Filters {
 		}
 		urls := urllist.(ui.List)
 
-		ui.UseRouter(e,func(r *ui.Router){
+		ui.UseRouter(evt.Origin(),func(r *ui.Router){
 			filters := make([]*ui.Element,0,len(urls))
 			for i,url:= range urls{
 				urlstr:= string(url.(ui.String))
@@ -65,11 +60,15 @@ func NewFilterList(id string, options ...string) Filters {
 		})
 		return false
 	}))
-	return Filters{ui.BasicElement{doc.LoadFromStorage(e)}}
+	return e
+}, doc.AllowSessionStoragePersistence, doc.AllowAppLocalStoragePersistence)
+
+func NewFilterList(id string, options ...string) Filters {
+	return Filters{ui.BasicElement{doc.LoadFromStorage(newFilters( id, options...))}}
 }
 
 func ClearCompleteBtn(id string) doc.ButtonElement {
-	b := doc.Button(id, "button")
+	b := doc.Button("button", id)
 	b.SetText("Clear completed")
 	doc.AddClass(b.AsElement(), "clear-completed")
 	return b
