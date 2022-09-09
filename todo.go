@@ -109,9 +109,9 @@ var newtodo = doc.Elements.NewConstructor("todo", func(id string) *ui.Element {
 		}
 		complete := !(b.(ui.Bool))
 
-		newtodo := ui.Copy(todo).(ui.Object).Set("completed", ui.Bool(complete))
+		todo.Set("completed", ui.Bool(complete))
 
-		li.AsElement().SetDataSetUI("todo", newtodo)
+		li.AsElement().SetDataSetUI("todo", todo)
 		return false
 	}))
 

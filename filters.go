@@ -14,12 +14,12 @@ func NewFilter(name string, id string, u ui.Link) ui.BasicElement {
 	a := doc.Anchor(id+"-anchor")
 	a.FromLink(u)
 	li.AsElement().AppendChild(a)
-	a.AsElement().Watch("ui", "active", a.AsElement(), ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
+	a.AsElement().Watch("ui", "active", a, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 		b := evt.NewValue().(ui.Bool)
 		if b {
-			doc.AddClass(a.AsElement(), "selected")
+			doc.AddClass(evt.Origin(), "selected")
 		} else {
-			doc.RemoveClass(a.AsElement(), "selected")
+			doc.RemoveClass(evt.Origin(), "selected")
 		}
 		return false
 	}))

@@ -117,7 +117,7 @@ func main() {
 		}
 		t := NewTodo(s)
 		tdl = append(tdl, t)
-
+		ui.DEBUG("seetiing new list: ", tdl)
 		tlist.SetList(tdl)
 
 		return false

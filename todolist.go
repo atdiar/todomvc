@@ -34,6 +34,29 @@ func(t TodosListElement)AsViewElement() ui.ViewElement{
 	return ui.ViewElement{t.AsElement()}
 }
 
+func displayWhen(filter string) func(ui.Value) bool{
+	return func (v ui.Value)  bool{
+		o := v.(Todo)
+		cplte, _ := o.Get("completed")
+		complete := cplte.(ui.Bool)
+
+		if filter == "active" {
+			if complete {
+				return false
+			}
+			return true
+		}
+
+		if filter == "completed" {
+			if !complete {
+				return false
+			}
+			return true
+		}
+		return true	
+	}
+}
+
 var newTodolistElement = doc.Elements.NewConstructor("todoslist", func(id string) *ui.Element {
 	t := doc.Ul(id)
 	doc.AddClass(t.AsElement(), "todo-list")
@@ -58,6 +81,7 @@ var newTodolistElement = doc.Elements.NewConstructor("todoslist", func(id string
 		o.Set("filter", evt.NewValue())
 		tdl,ok:= evt.Origin().Get("ui","todoslist")
 		if !ok{
+			ui.DEBUG("could not find todoslist")
 			o.Set("todoslist", ui.NewList())
 		} else{
 			o.Set("todoslist",tdl)
@@ -68,14 +92,19 @@ var newTodolistElement = doc.Elements.NewConstructor("todoslist", func(id string
 
 	tview.AsElement().Watch("ui","todoslist", tview,ui.NewMutationHandler(func(evt ui.MutationEvent)bool{
 		o:= ui.NewObject()
-		o.Set("todoslist", evt.NewValue())
+		var filter = "all"
 		f,ok:= evt.Origin().Get("ui","filter")
 		if !ok{
-			o.Set("filter", ui.String("all"))
+			o.Set("filter", ui.String(filter))
 		} else{
+			filter = string(f.(ui.String))
 			o.Set("filter",f)
 		}
-		evt.Origin().SetUI("todoslistview",o)
+		//ui.DEBUG("todolist ui prop being set")
+		//ui.DEBUG(evt.NewValue())
+
+		o.Set("todoslist", evt.NewValue())
+		evt.Origin().Set("ui", "todoslistview",o)
 		return false
 	}))
 	
@@ -96,44 +125,34 @@ var newTodolistElement = doc.Elements.NewConstructor("todoslist", func(id string
 		return false
 	}))
 
-	t.AsElement().Watch("ui", "todoslistview", t.AsElement(), ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
+	t.AsElement().Watch("ui", "todoslistview", t, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
+		ui.DEBUG("todolistview is being rendered", evt.Origin().Mounted(), evt.NewValue(),"\n old:",evt.OldValue())
 		t:= evt.Origin()
 		// Handles list change, for instance, on new todo insertion
-		t.RemoveChildren() // TODO delete detached elements
+		//t.RemoveChildren() // TODO delete detached elements
 
 
 		o:= evt.NewValue().(ui.Object)
-		list:= o.MustGetList("todoslist")
+		
 		filter:= string(o.MustGetString("filter"))
+		list:= o.MustGetList("todoslist").Filter(displayWhen(filter))
+		copylist := ui.Copy(list).(ui.List)
+
 
 		newChildren := make([]*ui.Element, 0, len(list))
-		childrenSet := make(map[ui.String]struct{},len(list))
+		childrenSet := make(map[string]struct{},len(list))
 
 		for _, v := range list {
 			// Let's get each todo
 			o := v.(Todo)
 			id, _ := o.Get("id")
 			idstr := id.(ui.String)
-			cplte, _ := o.Get("completed")
-			complete := cplte.(ui.Bool)
-			childrenSet[idstr]=struct{}{}
-
-			if filter == "active" {
-				if complete {
-					continue
-				}
-			}
-
-			if filter == "completed" {
-				if !complete {
-					continue
-				}
-			}
+			
 
 			rntd, ok := FindTodoElement(o)
 			ntd := rntd.AsElement()
 			if ok {
-				ntd.SetUI("todo", o)
+				ntd.SyncUISetData("todo", o)
 			}
 			if !ok {
 				ntd = NewTodoElement(o).AsElement()
@@ -158,7 +177,7 @@ var newTodolistElement = doc.Elements.NewConstructor("todoslist", func(id string
 						}
 						if oldid == idstr {
 							tdl[i] = evt.NewValue()
-							t.SyncUISetData("todoslist", tdl) // update state and refresh list representation TODO use Update method
+							t.SetDataSetUI("todoslist", tdl) // DEBUG changed from SyncUISetData
 							break
 						}
 					}
@@ -173,37 +192,44 @@ var newTodolistElement = doc.Elements.NewConstructor("todoslist", func(id string
 					} else {
 						tdl = res.(ui.List)
 					}
-					snapshottdl := ui.NewList()
-					snapshottdl = append(snapshottdl, tdl...)
-					for i, rawtodo := range snapshottdl {
+					ntdl := tdl[:0]
+					var i int
+					
+					for _, rawtodo := range tdl {
 						todo := rawtodo.(Todo)
 						oldid, _ := todo.Get("id")
 						if oldid == idstr {
-							tdl = append(tdl[:i], tdl[i+1:]...)
-							//t.AsElement().SetDataSetUI("todoslist", tdl) // refresh list representation
-							ntd.Parent.DeleteChild(ntd)
-							t.SyncUISetData("todoslist", tdl)
-							break
+							evt.Origin().Parent.DeleteChild(evt.Origin())
+							continue
 						}
+						ntdl[i] = rawtodo
+						i++
 					}
+					ntdl = ntdl[:i]
+					t.SetDataSetUI("todoslist", ntdl) // DEBUG changed from SyncUISetData
 					return false
 				}))
 			}
 			newChildren = append(newChildren, ntd)
+			childrenSet[string(idstr)] =struct{}{}
 		}
-		oldlist,ok:=evt.OldValue().(ui.List)
-		if ok{
-			for _,v:=range oldlist{
-				o := v.(Todo)
-				id, _ := o.Get("id")
-				idstr := id.(ui.String)
-				if _,ok:= childrenSet[idstr];!ok{
-					d,ok:= FindTodoElement(o)
-					if ok{
-						ui.Delete(d.AsElement())
-					}
+		
+		/*for _,v:=range copylist{
+			o := v.(Todo)
+			id, _ := o.Get("id")
+			idstr := id.(ui.String)
+			if _,ok:= childrenSet[string(idstr)];!ok{
+				d,ok:= FindTodoElement(o)
+				if ok{
+					ui.Delete(d.AsElement())
 				}
 			}
+		}*/
+		
+		//ui.DEBUG(copylist)
+		if len(newChildren) == 0 && len(copylist)!= 0{ 
+			ui.DEBUG("filtered list ", len(list), list,)
+			ui.DEBUG(filter, "no Element")
 		}
 		t.SetChildrenElements(newChildren...)
 		return false
