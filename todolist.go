@@ -76,17 +76,20 @@ var newTodolistElement = doc.Elements.NewConstructor("todoslist", func(id string
 		t.AsElement().SetUI("filterslist",filterslist)
 	})
 
-	tview.AsElement().Watch("ui","filter", tview,ui.NewMutationHandler(func(evt ui.MutationEvent)bool{
+	tview.AsElement().Watch("event","filter", tview,ui.NewMutationHandler(func(evt ui.MutationEvent)bool{
+		evt.Origin().SetUI("filter",evt.NewValue())
+
 		o:= ui.NewObject()
 		o.Set("filter", evt.NewValue())
 		tdl,ok:= evt.Origin().Get("ui","todoslist")
 		if !ok{
-			ui.DEBUG("could not find todoslist")
+
 			o.Set("todoslist", ui.NewList())
 		} else{
-			o.Set("todoslist",tdl)
+
+			o.Set("todoslist",tdl.(ui.List))
 		}
-		evt.Origin().SetUI("todoslistview",o)
+		evt.Origin().Set("event","renderlist",o)
 		return false
 	}))
 
@@ -100,43 +103,45 @@ var newTodolistElement = doc.Elements.NewConstructor("todoslist", func(id string
 			filter = string(f.(ui.String))
 			o.Set("filter",f)
 		}
-		//ui.DEBUG("todolist ui prop being set")
-		//ui.DEBUG(evt.NewValue())
 
 		o.Set("todoslist", evt.NewValue())
-		evt.Origin().Set("ui", "todoslistview",o)
+
+		evt.Origin().Set("event", "renderlist",o)
 		return false
 	}))
 	
-	tview.OnActivation("all", ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
-		evt.Origin().SetUI("filter", ui.String("all"))
+	tview.OnActivated("all", ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
+		evt.Origin().Set("event","filter", ui.String("all"))
 		doc.GetWindow().SetTitle("TODOMVC-all")
 		return false
 	}))
-	tview.OnActivation("active", ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
-		evt.Origin().SetUI("filter", ui.String("active"))
+	tview.OnActivated("active", ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
+		evt.Origin().Set("event","filter", ui.String("active"))
 		doc.GetWindow().SetTitle("TODOMVC-active")
 
 		return false
 	}))
-	tview.OnActivation("completed", ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
-		evt.Origin().SetUI("filter", ui.String("completed"))
+	tview.OnActivated("completed", ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
+		evt.Origin().Set("event","filter", ui.String("completed"))
 		doc.GetWindow().SetTitle("TODOMVC-completed")
 		return false
 	}))
 
-	t.AsElement().Watch("ui", "todoslistview", t, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
-		ui.DEBUG("todolistview is being rendered", evt.Origin().Mounted(), evt.NewValue(),"\n old:",evt.OldValue())
+	t.AsElement().Watch("event", "renderlist", t, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 		t:= evt.Origin()
-		// Handles list change, for instance, on new todo insertion
-		//t.RemoveChildren() // TODO delete detached elements
+
+		// We retrieve old list so that the elements that were removed can be definitively deleted
+		var oldlist ui.List
+		oo,ok:= evt.OldValue().(ui.Object)
+		if ok{
+			oldlist = oo.MustGetList("todoslist")
+		}
 
 
 		o:= evt.NewValue().(ui.Object)
 		
 		filter:= string(o.MustGetString("filter"))
 		list:= o.MustGetList("todoslist").Filter(displayWhen(filter))
-		copylist := ui.Copy(list).(ui.List)
 
 
 		newChildren := make([]*ui.Element, 0, len(list))
@@ -156,6 +161,10 @@ var newTodolistElement = doc.Elements.NewConstructor("todoslist", func(id string
 			}
 			if !ok {
 				ntd = NewTodoElement(o).AsElement()
+				/*ntd.OnUnmounted(ui.NewMutationHandler(func(evt ui.MutationEvent)bool{
+					ui.DEBUG(evt.Origin().ID + " todo element has been unmounted")
+					return false
+				})) */
 				t.Watch("data", "todo", ntd, ui.NewMutationHandler(func(evt ui.MutationEvent) bool { // escalate back to the todolist the data changes issued at the todo Element level
 					var tdl ui.List
 					res, ok := t.Get("data", "todoslist")
@@ -202,7 +211,7 @@ var newTodolistElement = doc.Elements.NewConstructor("todoslist", func(id string
 							evt.Origin().Parent.DeleteChild(evt.Origin())
 							continue
 						}
-						ntdl[i] = rawtodo
+						ntdl= append(ntdl,rawtodo)
 						i++
 					}
 					ntdl = ntdl[:i]
@@ -214,7 +223,7 @@ var newTodolistElement = doc.Elements.NewConstructor("todoslist", func(id string
 			childrenSet[string(idstr)] =struct{}{}
 		}
 		
-		/*for _,v:=range copylist{
+		for _,v:=range oldlist{
 			o := v.(Todo)
 			id, _ := o.Get("id")
 			idstr := id.(ui.String)
@@ -224,13 +233,8 @@ var newTodolistElement = doc.Elements.NewConstructor("todoslist", func(id string
 					ui.Delete(d.AsElement())
 				}
 			}
-		}*/
-		
-		//ui.DEBUG(copylist)
-		if len(newChildren) == 0 && len(copylist)!= 0{ 
-			ui.DEBUG("filtered list ", len(list), list,)
-			ui.DEBUG(filter, "no Element")
 		}
+		
 		t.SetChildrenElements(newChildren...)
 		return false
 	}))

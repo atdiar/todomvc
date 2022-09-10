@@ -117,7 +117,6 @@ func main() {
 		}
 		t := NewTodo(s)
 		tdl = append(tdl, t)
-		ui.DEBUG("seetiing new list: ", tdl)
 		tlist.SetList(tdl)
 
 		return false
@@ -140,7 +139,7 @@ func main() {
 		return false
 	}))
 
-	AppSection.AsElement().Watch("data", "todoslist", TodosList.AsElement(), ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
+	AppSection.AsElement().Watch("ui", "todoslist", TodosList.AsElement(), ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 		tlist:= TodoListFromRef(TodosList)
 		l := tlist.GetList()
 
@@ -180,7 +179,7 @@ func main() {
 			ToggleAllInput.AsElement().SetDataSetUI("checked", ui.Bool(false))
 		}
 		return false
-	}))
+	}).RunASAP())
 
 	AppSection.AsElement().Watch("event", "toggled", ToggleAllInput, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 		status := evt.NewValue().(ui.Bool)
@@ -192,8 +191,11 @@ func main() {
 			t := todo.(Todo)
 			t.Set("completed", status)
 			tdl[i]=t
-			//todo, _ := FindTodoElement(t)
-			//todo.AsElement().SetDataSetUI("todo", t)
+			todo, ok := FindTodoElement(t)
+			if ok{
+				todo.AsElement().SetDataSetUI("todo", t)
+			}
+			
 		}
 		tlist.SetList(tdl)
 		return false
