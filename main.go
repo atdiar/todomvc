@@ -39,7 +39,7 @@ func main() {
 	})
 
 	document:= doc.NewDocument("Todo-App")
-	defer document.ListenAndServe()
+	//defer document.ListenAndServe()
 
 
 	ui.New(document.Body(),
@@ -228,5 +228,7 @@ func main() {
 		}
 		return false
 	}).RunASAP())
+
+	document.ListenAndServe()
 
 }

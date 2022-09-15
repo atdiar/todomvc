@@ -165,9 +165,9 @@ var newTodolistElement = doc.Elements.NewConstructor("todoslist", func(id string
 					ui.DEBUG(evt.Origin().ID + " todo element has been unmounted")
 					return false
 				})) */
-				t.Watch("data", "todo", ntd, ui.NewMutationHandler(func(evt ui.MutationEvent) bool { // escalate back to the todolist the data changes issued at the todo Element level
+				t.Watch("ui", "todo", ntd, ui.NewMutationHandler(func(evt ui.MutationEvent) bool { // escalate back to the todolist the data changes issued at the todo Element level
 					var tdl ui.List
-					res, ok := t.Get("data", "todoslist")
+					res, ok := t.Get("ui", "todoslist")
 					if !ok {
 						tdl = ui.NewList()
 					} else {
@@ -223,6 +223,8 @@ var newTodolistElement = doc.Elements.NewConstructor("todoslist", func(id string
 			childrenSet[string(idstr)] =struct{}{}
 		}
 		
+		t.SetChildrenElements(newChildren...)
+		
 		for _,v:=range oldlist{
 			o := v.(Todo)
 			id, _ := o.Get("id")
@@ -235,7 +237,6 @@ var newTodolistElement = doc.Elements.NewConstructor("todoslist", func(id string
 			}
 		}
 		
-		t.SetChildrenElements(newChildren...)
 		return false
 	}))
 
