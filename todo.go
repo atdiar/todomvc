@@ -97,7 +97,7 @@ var newtodo = doc.Elements.NewConstructor("todo", func(id string) *ui.Element {
 	}))
 
 	li.AsElement().Watch("event", "toggle", li, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
-		res, ok := li.AsElement().GetData("todo")
+		res, ok := li.AsElement().Get("ui","todo")
 		if !ok {
 			panic("Cannot find corresponding todo element.")
 		}

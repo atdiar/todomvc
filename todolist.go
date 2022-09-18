@@ -81,12 +81,10 @@ var newTodolistElement = doc.Elements.NewConstructor("todoslist", func(id string
 
 		o:= ui.NewObject()
 		o.Set("filter", evt.NewValue())
-		tdl,ok:= evt.Origin().Get("ui","todoslist")
+		tdl,ok:= evt.Origin().Get("data","todoslist")
 		if !ok{
-
 			o.Set("todoslist", ui.NewList())
 		} else{
-
 			o.Set("todoslist",tdl.(ui.List))
 		}
 		evt.Origin().Set("event","renderlist",o)
@@ -141,18 +139,18 @@ var newTodolistElement = doc.Elements.NewConstructor("todoslist", func(id string
 		o:= evt.NewValue().(ui.Object)
 		
 		filter:= string(o.MustGetString("filter"))
-		list:= o.MustGetList("todoslist").Filter(displayWhen(filter))
+		newlist:= o.MustGetList("todoslist")
+		list:= newlist.Filter(displayWhen(filter))
 
 
 		newChildren := make([]*ui.Element, 0, len(list))
-		childrenSet := make(map[string]struct{},len(list))
+		childrenSet := make(map[string]struct{},len(newlist))
 
 		for _, v := range list {
 			// Let's get each todo
 			o := v.(Todo)
 			id, _ := o.Get("id")
 			idstr := id.(ui.String)
-			
 
 			rntd, ok := FindTodoElement(o)
 			ntd := rntd.AsElement()
@@ -220,10 +218,16 @@ var newTodolistElement = doc.Elements.NewConstructor("todoslist", func(id string
 				}))
 			}
 			newChildren = append(newChildren, ntd)
-			childrenSet[string(idstr)] =struct{}{}
 		}
 		
 		t.SetChildrenElements(newChildren...)
+
+		for _,v:= range newlist{
+			o := v.(Todo)
+			id, _ := o.Get("id")
+			idstr := id.(ui.String)
+			childrenSet[string(idstr)]= struct{}{}
+		}
 		
 		for _,v:=range oldlist{
 			o := v.(Todo)
@@ -236,6 +240,8 @@ var newTodolistElement = doc.Elements.NewConstructor("todoslist", func(id string
 				}
 			}
 		}
+
+		
 		
 		return false
 	}))

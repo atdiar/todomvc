@@ -9,7 +9,9 @@ import (
 // GOOS=js GOARCH=wasm go build -o  server/assets/app.wasm
 
 func main() {
-	
+
+
+		
 
 	var AppSection *ui.Element
 	var MainSection *ui.Element
@@ -230,5 +232,6 @@ func main() {
 	}).RunASAP())
 
 	document.ListenAndServe()
+
 
 }
