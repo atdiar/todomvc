@@ -96,6 +96,42 @@ var newtodo = doc.Elements.NewConstructor("todo", func(id string) *ui.Element {
 		return false
 	}))
 
+	li.AsElement().Watch("event", "render", li, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
+		todo, ok := evt.Origin().Get("ui","todo")
+		if !ok {
+			return true
+		}
+		t:= todo.(Todo)
+
+		_, ok = t.Get("id")
+		if !ok {
+			return true
+		}
+
+		todocomplete, ok := t.Get("completed")
+		if !ok {
+			return true
+		}
+		todocompletebool := todocomplete.(ui.Bool)
+
+		if todocompletebool {
+			doc.AddClass(li.AsElement(), "completed")
+		} else {
+			doc.RemoveClass(li.AsElement(), "completed")
+		}
+
+		todotitle, ok := t.Get("title")
+		if !ok {
+			return true
+		}
+		todotitlestr := todotitle.(ui.String)
+
+		i.AsElement().SetUI("checked", todocompletebool)
+		l.SetText(string(todotitlestr))
+
+		return false
+	}))
+
 	li.AsElement().Watch("event", "toggle", li, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 		res, ok := li.AsElement().Get("ui","todo")
 		if !ok {

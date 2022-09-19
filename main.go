@@ -193,10 +193,10 @@ func main() {
 			t := todo.(Todo)
 			t.Set("completed", status)
 			tdl[i]=t
-			todo, ok := FindTodoElement(t)
+			/*todo, ok := FindTodoElement(t)
 			if ok{
-				todo.AsElement().SetDataSetUI("todo", t)
-			}
+				todo.AsElement().SyncUISetData("todo", t)
+			}*/
 			
 		}
 		tlist.SetList(tdl)

@@ -103,7 +103,7 @@ var newTodolistElement = doc.Elements.NewConstructor("todoslist", func(id string
 		}
 
 		o.Set("todoslist", evt.NewValue())
-
+		ui.DEBUG("rendering...")
 		evt.Origin().Set("event", "renderlist",o)
 		return false
 	}))
@@ -127,7 +127,8 @@ var newTodolistElement = doc.Elements.NewConstructor("todoslist", func(id string
 
 	t.AsElement().Watch("event", "renderlist", t, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 		t:= evt.Origin()
-
+		t.RemoveChildren()
+		ui.DEBUG("render event triggered.")
 		// We retrieve old list so that the elements that were removed can be definitively deleted
 		var oldlist ui.List
 		oo,ok:= evt.OldValue().(ui.Object)
@@ -155,7 +156,8 @@ var newTodolistElement = doc.Elements.NewConstructor("todoslist", func(id string
 			rntd, ok := FindTodoElement(o)
 			ntd := rntd.AsElement()
 			if ok {
-				ntd.SyncUISetData("todo", o)
+				ntd.SyncUISetData("todo", o) // try to refresh todo DEBUG
+				ntd.Set("event","render",ui.Bool(true))
 			}
 			if !ok {
 				ntd = NewTodoElement(o).AsElement()
@@ -193,7 +195,7 @@ var newTodolistElement = doc.Elements.NewConstructor("todoslist", func(id string
 
 				t.Watch("event", "delete", ntd, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 					var tdl ui.List
-					res, ok := t.AsElement().Get("data", "todoslist")
+					res, ok := t.AsElement().Get("ui", "todoslist")
 					if !ok {
 						tdl = ui.NewList()
 					} else {
@@ -206,7 +208,6 @@ var newTodolistElement = doc.Elements.NewConstructor("todoslist", func(id string
 						todo := rawtodo.(Todo)
 						oldid, _ := todo.Get("id")
 						if oldid == idstr {
-							evt.Origin().Parent.DeleteChild(evt.Origin())
 							continue
 						}
 						ntdl= append(ntdl,rawtodo)
