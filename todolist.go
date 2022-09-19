@@ -103,7 +103,6 @@ var newTodolistElement = doc.Elements.NewConstructor("todoslist", func(id string
 		}
 
 		o.Set("todoslist", evt.NewValue())
-		ui.DEBUG("rendering...")
 		evt.Origin().Set("event", "renderlist",o)
 		return false
 	}))
@@ -128,7 +127,6 @@ var newTodolistElement = doc.Elements.NewConstructor("todoslist", func(id string
 	t.AsElement().Watch("event", "renderlist", t, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 		t:= evt.Origin()
 		t.RemoveChildren()
-		ui.DEBUG("render event triggered.")
 		// We retrieve old list so that the elements that were removed can be definitively deleted
 		var oldlist ui.List
 		oo,ok:= evt.OldValue().(ui.Object)
