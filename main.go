@@ -70,7 +70,7 @@ func main() {
 								CSS("toggle-all"),
 								Listen("click",toggleallhandler),
 							),
-							E(doc.Label("toggle-all-label").For("toggle-all")),
+							E(doc.Label("toggle-all-label").For(ToggleAllInput)),
 							E(NewTodosListElement("todo-list", doc.EnableLocalPersistence()),
 								Ref(&TodosList),
 								InitRouter(Hijack("/","/all"),doc.RouterConfig),
@@ -216,7 +216,7 @@ func main() {
 	}).RunASAP())
 
 	AppSection.AsElement().Watch("ui","filterslist",TodosList,ui.NewMutationHandler(func(evt ui.MutationEvent)bool{
-		FilterList.AsElement().SetUI("filterslist",evt.NewValue())
+		FilterList.AsElement().SetDataSetUI("filterslist",evt.NewValue())
 		return false
 	}).RunASAP())
 

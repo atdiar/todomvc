@@ -89,14 +89,14 @@ var newtodo = doc.Elements.NewConstructor("todo", func(id string) *ui.Element {
 		}
 		todotitlestr := todotitle.(ui.String)
 
-		i.AsElement().SetUI("checked", todocompletebool)
+		i.AsElement().SetDataSetUI("checked", todocompletebool)
 		l.SetText(string(todotitlestr))
 		edit.AsElement().SetDataSetUI("value", todotitlestr)
 
 		return false
 	}))
 
-	li.AsElement().Watch("event", "render", li, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
+	li.AsElement().Watch("event", "update", li, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 		todo, ok := evt.Origin().Get("ui","todo")
 		if !ok {
 			return true
@@ -126,7 +126,7 @@ var newtodo = doc.Elements.NewConstructor("todo", func(id string) *ui.Element {
 		}
 		todotitlestr := todotitle.(ui.String)
 
-		i.AsElement().SetUI("checked", todocompletebool)
+		i.AsElement().SetDataSetUI("checked", todocompletebool)
 		l.SetText(string(todotitlestr))
 
 		return false

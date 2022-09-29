@@ -11,7 +11,7 @@ type TodosListElement struct {
 
 func (t TodosListElement) GetList() ui.List {
 	var tdl ui.List
-	res, ok := t.AsElement().Get("data", "todoslist")
+	res, ok := t.AsElement().Get("ui", "todoslist")
 	if !ok {
 		tdl = ui.NewList()
 	}
@@ -73,11 +73,11 @@ var newTodolistElement = doc.Elements.NewConstructor("todoslist", func(id string
 		filterslist.Set("names",names)
 		filterslist.Set("urls",links)
 
-		t.AsElement().SetUI("filterslist",filterslist)
+		t.AsElement().SetDataSetUI("filterslist",filterslist)
 	})
 
 	tview.AsElement().Watch("event","filter", tview,ui.NewMutationHandler(func(evt ui.MutationEvent)bool{
-		evt.Origin().SetUI("filter",evt.NewValue())
+		evt.Origin().SetDataSetUI("filter",evt.NewValue())
 
 		o:= ui.NewObject()
 		o.Set("filter", evt.NewValue())
@@ -154,8 +154,8 @@ var newTodolistElement = doc.Elements.NewConstructor("todoslist", func(id string
 			rntd, ok := FindTodoElement(o)
 			ntd := rntd.AsElement()
 			if ok {
-				ntd.SyncUISetData("todo", o) // try to refresh todo DEBUG
-				ntd.Set("event","render",ui.Bool(true))
+				ntd.SyncUISetData("todo", o)
+				ntd.Set("event","update",ui.Bool(true))
 			}
 			if !ok {
 				ntd = NewTodoElement(o).AsElement()
@@ -184,7 +184,7 @@ var newTodolistElement = doc.Elements.NewConstructor("todoslist", func(id string
 						}
 						if oldid == idstr {
 							tdl[i] = evt.NewValue()
-							t.SetDataSetUI("todoslist", tdl) // DEBUG changed from SyncUISetData
+							t.SetDataSetUI("todoslist", tdl)
 							break
 						}
 					}
@@ -212,7 +212,7 @@ var newTodolistElement = doc.Elements.NewConstructor("todoslist", func(id string
 						i++
 					}
 					ntdl = ntdl[:i]
-					t.SetDataSetUI("todoslist", ntdl) // DEBUG changed from SyncUISetData
+					t.SetDataSetUI("todoslist", ntdl)
 					return false
 				}))
 			}
