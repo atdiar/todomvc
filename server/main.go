@@ -5,12 +5,9 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
-	"fmt"
-	"io"
+
 )
 
-var profile []byte
 
 func main() {
 	const staticPath = "assets"
@@ -21,31 +18,6 @@ func main() {
 	log.Print("Listening on port :8080")
 
 	http.ListenAndServe(":8080", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/pprof" {
-			w.Header().Add("Access-Control-Allow-Origin","*")
-			if  strings.EqualFold(r.Method ,"POST"){
-				var err error
-				profile,err= io.ReadAll(r.Body)
-				if err!= nil{
-					log.Print(err)
-					w.WriteHeader(http.StatusExpectationFailed)
-					fmt.Fprint(w,err.Error())
-					return
-				}
-				log.Print("ok profile has been created...")
-				w.WriteHeader(http.StatusOK)
-				fmt.Fprint(w,"OK profile created")
-			} else if  strings.EqualFold(r.Method ,"GET"){
-				if profile == nil{
-					w.WriteHeader(http.StatusExpectationFailed)
-					fmt.Fprint(w,"no profile available")
-					return 
-				}
-				w.WriteHeader(http.StatusOK)
-				w.Write(profile)
-			}
-			return
-		}
 
 		path, err := filepath.Abs(r.URL.Path)
 		if err != nil {

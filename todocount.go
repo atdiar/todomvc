@@ -8,7 +8,7 @@ import (
 )
 
 type TodoCount struct {
-	ui.BasicElement
+	*ui.Element
 }
 
 func (t TodoCount) SetCount(count int) TodoCount {
@@ -17,15 +17,15 @@ func (t TodoCount) SetCount(count int) TodoCount {
 }
 
 func TodoCountFromRef(ref *ui.Element) TodoCount{
-	return TodoCount{ui.BasicElement{ref}}
+	return TodoCount{ref}
 }
 
 func NewTodoCount(id string, options ...string) TodoCount {
-	return TodoCount{ui.BasicElement{doc.LoadFromStorage(newtodocount(id, options...))}}
+	return TodoCount{doc.LoadFromStorage(newtodocount(id, options...))}
 }
 
 var newtodocount = doc.Elements.NewConstructor("todocount", func(id string) *ui.Element {
-	s := doc.Span(id)
+	s := doc.Span.WithID(id)
 	s.AsElement().Watch("ui", "count", s.AsElement(), ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 		n, ok := evt.NewValue().(ui.Number)
 		if !ok {

@@ -5,18 +5,19 @@
 	<meta charset="utf-8">
 	<title>TodoMVC</title>
 	
-	<base href="/">
-	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/todomvc-app-css@2.2.0/index.css">
-</head>
-
-<body>
-	<script src="wasm_exec.js"></script>
-	<script>
+	<!-- <base href="/"> -->
+	<link id ="todocss" rel="stylesheet" href="/css/todomvc.css">
+	<script id="wasmVM" src="/wasm_exec.js"></script>
+	<script id="goruntime">
 		const go = new Go();
             WebAssembly.instantiateStreaming(fetch("app.wasm"), go.importObject).then((result) => {
                 go.run(result.instance);
             });
 	</script>
+</head>
+
+<body>
+	
 
 </body>
 

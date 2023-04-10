@@ -8,10 +8,8 @@ import (
 
 // GOOS=js GOARCH=wasm go build -o  server/assets/app.wasm
 
-func main() {
+func App() doc.Document {
 
-
-		
 
 	var AppSection *ui.Element
 	var MainSection *ui.Element
@@ -24,60 +22,90 @@ func main() {
 	var ClearCompleteButton *ui.Element
 	
 	toggleallhandler:= ui.NewEventHandler(func(evt ui.Event) bool {
-		togglestate, ok := evt.Target().GetData("checked")
+		togglestate, ok := evt.Target().Get("ui","checked")
 		if !ok {
-			evt.Target().Set("event", "toggled", ui.Bool(true))
+			evt.Target().TriggerEvent( "toggled")
 			return false
 		}
 		ts := togglestate.(ui.Bool)
-		evt.Target().Set("event", "toggled", !ts)
+		ui.DEBUG("togglestate: ",!ts)
+		evt.Target().TriggerEvent( "toggled", !ts)
 		return false
 	})
 
 	ClearCompleteHandler := ui.NewEventHandler(func(evt ui.Event) bool {
 		ClearCompleteButton:= evt.Target()
-		ClearCompleteButton.Set("event", "clear", ui.Bool(true))
+		ClearCompleteButton.TriggerEvent( "clear", ui.Bool(true))
 		return false
 	})
 
-	document:= doc.NewDocument("Todo-App")
-	//defer document.ListenAndServe()
+	
 
+	document:= doc.NewDocument("Todo-App") // TODO location and name of the wasm file should be retrieved at build time via build tags
+	
+	
+	
 
+	// TODO the HEAD should be pregenerated at build time
+	E(document.Head(),
+		Children(
+			E(doc.Link.WithID("todocss").
+				SetAttribute("rel","stylesheet").
+				SetAttribute("href","/css/todomvc.css"),
+			),
+			E(doc.Script.WithID("wasmVM").
+				Defer().
+				Src("/wasm_exec.js"),
+			),
+			E(doc.Script.WithID("goruntime").
+				Defer().
+				SetInnerHTML(
+					`
+						const go = new Go();
+						WebAssembly.instantiateStreaming(fetch("/app.wasm"), go.importObject).then((result) => {
+							go.run(result.instance);
+						});
+					`,
+				),
+			),
+		),
+	)	
+
+	
 	ui.New(document.Body(),
 		Children(
 			E(doc.AriaChangeAnnouncer),
-			E(doc.Section("todoapp"),
+			E(doc.Section.WithID("todoapp"),
 				Ref(&AppSection),
 				CSS("todoapp"),
 				Children(
-					E(doc.Header("header"),
+					E(doc.Header.WithID("header"),
 						CSS("header"),
 						Children(
-							E(doc.H1("apptitle").SetText("Todo")),
+							E(doc.H1.WithID("apptitle").SetText("Todo")),
 							E(NewTodoInput("new-todo"),
 								Ref(&todosinput),
 								CSS("new-todo"),
 							),
 						),
 					),
-					E(doc.Section("main"),
+					E(doc.Section.WithID("main"),
 						Ref(&MainSection),
 						CSS("main"),
 						Children(
-							E(doc.Input("checkbox","toggle-all"),
+							E(doc.Input.WithID("toggle-all","checkbox"),
 								Ref(&ToggleAllInput),
 								CSS("toggle-all"),
 								Listen("click",toggleallhandler),
 							),
-							E(doc.Label("toggle-all-label").For(ToggleAllInput)),
+							E(doc.Label().For(ToggleAllInput)),
 							E(NewTodosListElement("todo-list", doc.EnableLocalPersistence()),
 								Ref(&TodosList),
 								InitRouter(Hijack("/","/all"),doc.RouterConfig),
 							),
 						),
 					),
-					E(doc.Footer("footer"),
+					E(doc.Footer.WithID("footer"),
 						Ref(&MainFooter),
 						CSS("footer"),
 						Children(
@@ -91,13 +119,13 @@ func main() {
 					),
 				),
 			),
-			E(doc.Footer("infofooter"),
+			E(doc.Footer(),
 				CSS("info"),
 				Children(
-					E(doc.Paragraph("editinfo").SetText("Double-click to edit a todo")),
-					E(doc.Paragraph("createdWith").SetText("Created with: "),
+					E(doc.Paragraph().SetText("Double-click to edit a todo")),
+					E(doc.Paragraph().SetText("Created with: "),
 						Children(
-							E(doc.Anchor("particleui").SetHREF("http://github.com/atdiar/particleui").SetText("ParticleUI")),
+							E(doc.Anchor().SetHREF("http://github.com/atdiar/particleui").SetText("ZUI")),
 						),
 					),
 				),
@@ -109,12 +137,13 @@ func main() {
 	// COMPONENTS DATA RELATIONSHIPS
 
 	// 4. Watch for new todos to insert
-	AppSection.AsElement().Watch("event", "newtodo", todosinput.AsElement(), ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
+	AppSection.WatchEvent( "newtodo", todosinput.AsElement(), ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 		tlist:= TodoListFromRef(TodosList)
 		tdl := tlist.GetList()
 
 		s, ok := evt.NewValue().(ui.String)
 		if !ok || s == "" {
+			ui.DEBUG("BAD TODO")
 			return true
 		}
 		t := NewTodo(s)
@@ -124,7 +153,7 @@ func main() {
 		return false
 	}))
 
-	AppSection.AsElement().Watch("event", "clear", ClearCompleteButton.AsElement(), ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
+	AppSection.WatchEvent( "clear", ClearCompleteButton.AsElement(), ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 		tlist:= TodoListFromRef(TodosList)
 		tdl := tlist.GetList()
 		ntdl := ui.NewList()
@@ -141,7 +170,7 @@ func main() {
 		return false
 	}))
 
-	AppSection.AsElement().Watch("ui", "todoslist", TodosList.AsElement(), ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
+	AppSection.WatchEvent("todoslistupdate", TodosList.AsElement(), ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 		tlist:= TodoListFromRef(TodosList)
 		l := tlist.GetList()
 
@@ -153,6 +182,7 @@ func main() {
 
 		countcomplete := 0
 		allcomplete := true
+
 		for _, todo := range l {
 			t := todo.(Todo)
 			completed, ok := t.Get("completed")
@@ -166,10 +196,12 @@ func main() {
 				countcomplete++
 			}
 		}
+		
 		tc:= TodoCountFromRef(TodoCount)
 		tc.SetCount(len(l) - countcomplete)
 
 		if countcomplete == 0 {
+			allcomplete =false
 			doc.SetInlineCSS(ClearCompleteButton.AsElement(), "display:none")
 		} else {
 			doc.SetInlineCSS(ClearCompleteButton.AsElement(), "display:block")
@@ -177,13 +209,15 @@ func main() {
 
 		if allcomplete {
 			ToggleAllInput.AsElement().SetDataSetUI("checked", ui.Bool(true))
+			ui.DEBUG("checked")
 		} else {
 			ToggleAllInput.AsElement().SetDataSetUI("checked", ui.Bool(false))
+			ui.DEBUG("unchecked")
 		}
 		return false
 	}).RunASAP())
 
-	AppSection.AsElement().Watch("event", "toggled", ToggleAllInput, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
+	AppSection.WatchEvent("toggled", ToggleAllInput, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 		status := evt.NewValue().(ui.Bool)
 
 		tlist:= TodoListFromRef(TodosList)
@@ -191,19 +225,26 @@ func main() {
 		tdl := tlist.GetList()
 		for i, todo := range tdl {
 			t := todo.(Todo)
-			t.Set("completed", status)
-			tdl[i]=t
-			/*todo, ok := FindTodoElement(t)
-			if ok{
-				todo.AsElement().SyncUISetData("todo", t)
-			}*/
-			
+			s,ok:=t.Get("completed")
+			if !ok{
+				panic("todo is missing completed field")
+			}
+			if ! (s.(ui.Bool)&& status){
+				t.Set("completed", status)
+				tdl[i]=t
+				el,ok:= FindTodoElement(doc.GetDocument(evt.Origin()),t)
+				if !ok{
+					panic("todo element not found")
+				}
+				el.SyncUISetData("todo",t)
+				el.Update()
+			}		
 		}
 		tlist.SetList(tdl)
 		return false
 	}))
 
-	AppSection.AsElement().Watch("event", "mounted", MainFooter, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
+	AppSection.WatchEvent( "mounted", MainFooter, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 		
 		tlist:= TodoListFromRef(TodosList)
 		tdl := tlist.GetList()
@@ -215,7 +256,7 @@ func main() {
 		return false
 	}).RunASAP())
 
-	AppSection.AsElement().Watch("ui","filterslist",TodosList,ui.NewMutationHandler(func(evt ui.MutationEvent)bool{
+	AppSection.Watch("ui","filterslist",TodosList,ui.NewMutationHandler(func(evt ui.MutationEvent)bool{
 		FilterList.AsElement().SetDataSetUI("filterslist",evt.NewValue())
 		return false
 	}).RunASAP())
@@ -231,7 +272,12 @@ func main() {
 		return false
 	}).RunASAP())
 
-	document.ListenAndServe()
+	
+	return document
 
+}
 
+func main(){
+	ListenAndServe := doc.NewBuilder(App)
+	ListenAndServe(nil)
 }

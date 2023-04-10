@@ -8,7 +8,7 @@ import (
 )
 
 func NewTodoInput(id string) doc.InputElement {
-	todosinput := doc.Input("text", id)
+	todosinput := doc.Input.WithID(id,"text")
 	doc.SetAttribute(todosinput.AsElement(), "placeholder", "What needs to be done?")
 	//doc.SetAttribute(todosinput.AsElement(), "autofocus", "")
 	doc.SetAttribute(todosinput.AsElement(), "onfocus", "this.value=''")
@@ -18,16 +18,16 @@ func NewTodoInput(id string) doc.InputElement {
 	todosinput.AsElement().AddEventListener("change", ui.NewEventHandler(func(evt ui.Event) bool {
 		v,ok:= evt.Value().(ui.Object).Get("value")
 		if !ok{
-			panic("framework error: unable to find change event value")
+			todosinput.SetDataSetUI("value", ui.String(""))
 		}
 		s:= v.(ui.String)
 		str := strings.TrimSpace(string(s)) // Trim value
-		todosinput.AsElement().SetDataSetUI("value", ui.String(str))
+		todosinput.SetDataSetUI("value", ui.String(str))
 		return false
 	}))
 
 	todosinput.AsElement().AddEventListener("keyup", ui.NewEventHandler(func(evt ui.Event) bool {
-		todosinput := doc.InputElement{ui.BasicElement{evt.CurrentTarget()}}
+		todosinput := doc.InputElement{evt.CurrentTarget()}
 		val,ok:= evt.Value().(ui.Object).Get("key")
 		if !ok{
 			panic("framework error: unable to find event key")
@@ -36,7 +36,7 @@ func NewTodoInput(id string) doc.InputElement {
 		if v:=val.(ui.String); v == "Enter" {
 			evt.PreventDefault()
 			if todosinput.Value() != "" {
-				todosinput.AsElement().Set("event", "newtodo", todosinput.Value())
+				todosinput.AsElement().TriggerEvent("newtodo", todosinput.Value())
 			}
 			todosinput.AsElement().SetDataSetUI("value", ui.String(""))
 			todosinput.Clear()
