@@ -22,10 +22,6 @@ type TodoElement struct {
 	*ui.Element
 }
 
-func(t TodoElement) Update() TodoElement{
-	t.TriggerEvent("update")
-	return t
-}
 
 func FindTodoElement(d *doc.Document, t Todo) (TodoElement, bool) {
 	todoid, ok := t.Get("id")
@@ -64,24 +60,12 @@ var newtodo = doc.Elements.NewConstructor("todo", func(id string) *ui.Element {
 
 	edit.AsElement().BindDeletion(li.AsElement())
 
-	li.AsElement().Watch("ui", "todo", li, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
-		li.TriggerEvent("update")
-		return false
-	}))
 
-	// update can be used after having SYnced the UI in order to refresh the display of a single todo
-	// Since the todolist does nto observe this event, it does not trigger the re-rendering of the list
-	li.WatchEvent("update", li, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
-		todo, ok := evt.Origin().Get("ui", "todo")
-		if !ok {
-			return true
-		}
-		t := todo.(Todo)
-
-		_, ok = t.Get("id")
-		if !ok {
-			return true
-		}
+	li.Watch("ui","todo", li, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
+	
+	
+		t := evt.NewValue().(Todo)
+		
 
 		todocomplete, ok := t.Get("completed")
 		if !ok {
@@ -101,18 +85,30 @@ var newtodo = doc.Elements.NewConstructor("todo", func(id string) *ui.Element {
 		}
 		todotitlestr := todotitle.(ui.String)
 
+		/*
+		if todocompletebool{
+			doc.SetAttribute(i.AsElement(), "checked","")
+		} else{
+			doc.RemoveAttribute(i.AsElement(), "checked")
+		}
+		*/
+		//ui.DEBUG(i.Get("ui", "checked"))
+		//ui.DEBUG(" vs ",todocompletebool)
 		i.AsElement().SetDataSetUI("checked", todocompletebool)
-		ui.DEBUG("todo is being set to completion status: ", todocompletebool)
+
+
 		l.SetText(string(todotitlestr))
 		edit.AsElement().SetDataSetUI("value", todotitlestr)
 
 		return false
-	}))
+	}).RunASAP())
 
 	
 
-	li.AsElement().WatchEvent("toggle", li, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
-		res, ok := li.AsElement().Get("ui", "todo")
+	
+
+	li.WatchEvent("toggle", li, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
+		res, ok := evt.Origin().Get("ui", "todo")
 		if !ok {
 			panic("Cannot find corresponding todo element.")
 		}
@@ -126,7 +122,8 @@ var newtodo = doc.Elements.NewConstructor("todo", func(id string) *ui.Element {
 
 		todo.Set("completed", ui.Bool(complete))
 
-		li.AsElement().SetDataSetUI("todo", todo)
+		evt.Origin().SetDataSetUI("todo", todo)
+
 		return false
 	}))
 
@@ -151,7 +148,7 @@ var newtodo = doc.Elements.NewConstructor("todo", func(id string) *ui.Element {
 
 	i.AsElement().AddEventListener("click", ui.NewEventHandler(func(evt ui.Event) bool {
 		//evt.PreventDefault()
-		li.AsElement().TriggerEvent("toggle", ui.Bool(true))
+		li.TriggerEvent("toggle")
 		return false
 	}))
 

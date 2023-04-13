@@ -22,14 +22,20 @@ func App() doc.Document {
 	var ClearCompleteButton *ui.Element
 	
 	toggleallhandler:= ui.NewEventHandler(func(evt ui.Event) bool {
-		togglestate, ok := evt.Target().Get("ui","checked")
-		if !ok {
-			evt.Target().TriggerEvent( "toggled")
-			return false
+		var ischecked bool
+		check,ok:= evt.Target().Get("ui","checked")
+		if !ok{
+			chk := doc.GetAttribute(evt.Target(),"checked")
+			if chk != "null"{
+				ischecked = true
+			}
+		} else{
+			ischecked = check.(ui.Bool).Bool()
 		}
-		ts := togglestate.(ui.Bool)
-		ui.DEBUG("togglestate: ",!ts)
-		evt.Target().TriggerEvent( "toggled", !ts)
+
+		evt.Target().SyncUISetData("checked",ui.Bool(!ischecked))
+
+		evt.Target().TriggerEvent("toggled")
 		return false
 	})
 
@@ -148,6 +154,7 @@ func App() doc.Document {
 		}
 		t := NewTodo(s)
 		tdl = append(tdl, t)
+		tlist.NewTodo(t)
 		tlist.SetList(tdl)
 
 		return false
@@ -170,7 +177,7 @@ func App() doc.Document {
 		return false
 	}))
 
-	AppSection.WatchEvent("todoslistupdate", TodosList.AsElement(), ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
+	AppSection.WatchEvent("renderlist", TodosList.AsElement(), ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 		tlist:= TodoListFromRef(TodosList)
 		l := tlist.GetList()
 
@@ -187,7 +194,7 @@ func App() doc.Document {
 			t := todo.(Todo)
 			completed, ok := t.Get("completed")
 			if !ok {
-				allcomplete = false
+				panic("todo should have a completed property")
 			}
 			c := completed.(ui.Bool)
 			if !c {
@@ -209,38 +216,31 @@ func App() doc.Document {
 
 		if allcomplete {
 			ToggleAllInput.AsElement().SetDataSetUI("checked", ui.Bool(true))
-			ui.DEBUG("checked")
 		} else {
 			ToggleAllInput.AsElement().SetDataSetUI("checked", ui.Bool(false))
-			ui.DEBUG("unchecked")
 		}
 		return false
 	}).RunASAP())
 
 	AppSection.WatchEvent("toggled", ToggleAllInput, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
-		status := evt.NewValue().(ui.Bool)
+		chk,ok:= evt.Origin().Get("ui","checked")
+		if !ok{
+			panic(("checked prop should be present"))
+		}
+		status := chk.(ui.Bool)
 
 		tlist:= TodoListFromRef(TodosList)
 
+
 		tdl := tlist.GetList()
+
 		for i, todo := range tdl {
 			t := todo.(Todo)
-			s,ok:=t.Get("completed")
-			if !ok{
-				panic("todo is missing completed field")
-			}
-			if ! (s.(ui.Bool)&& status){
-				t.Set("completed", status)
-				tdl[i]=t
-				el,ok:= FindTodoElement(doc.GetDocument(evt.Origin()),t)
-				if !ok{
-					panic("todo element not found")
-				}
-				el.SyncUISetData("todo",t)
-				el.Update()
-			}		
+			t.Set("completed", status)
+			tdl[i]=t				
 		}
 		tlist.SetList(tdl)
+
 		return false
 	}))
 
@@ -254,7 +254,7 @@ func App() doc.Document {
 			doc.SetInlineCSS(MainFooter.AsElement(), "display : block")
 		}
 		return false
-	}).RunASAP())
+	}))
 
 	AppSection.Watch("ui","filterslist",TodosList,ui.NewMutationHandler(func(evt ui.MutationEvent)bool{
 		FilterList.AsElement().SetDataSetUI("filterslist",evt.NewValue())
@@ -270,7 +270,7 @@ func App() doc.Document {
 			doc.SetInlineCSS(MainSection.AsElement(), "display : block")
 		}
 		return false
-	}).RunASAP())
+	}))
 
 	
 	return document
