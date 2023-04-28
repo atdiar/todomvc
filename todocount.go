@@ -39,7 +39,7 @@ var newtodocount = doc.Elements.NewConstructor("todocount", func(id string) *ui.
 		htmlstr := "<strong>" + strconv.Itoa(nn) + "<strong>" + " " + i + " left"
 		doc.SetInnerHTML(s.AsElement(), htmlstr)
 		return false
-	}))
+	}).RunASAP())
 
 	doc.AddClass(s.AsElement(), "todo-count")
 	return s.AsElement()

@@ -23,17 +23,14 @@ func App() doc.Document {
 	
 	toggleallhandler:= ui.NewEventHandler(func(evt ui.Event) bool {
 		var ischecked bool
-		check,ok:= evt.Target().Get("ui","checked")
+		_,ok:= evt.Target().Get("ui","checked")
 		if !ok{
 			chk := doc.GetAttribute(evt.Target(),"checked")
 			if chk != "null"{
 				ischecked = true
 			}
-		} else{
-			ischecked = check.(ui.Bool).Bool()
+			evt.Target().SyncUISetData("checked",ui.Bool(!ischecked))
 		}
-
-		evt.Target().SyncUISetData("checked",ui.Bool(!ischecked))
 
 		evt.Target().TriggerEvent("toggled")
 		return false
@@ -47,8 +44,7 @@ func App() doc.Document {
 
 	
 
-	document:= doc.NewDocument("Todo-App") // TODO location and name of the wasm file should be retrieved at build time via build tags
-	
+	document:= doc.NewDocument("Todo-App")
 	
 	
 
@@ -115,6 +111,7 @@ func App() doc.Document {
 						Ref(&MainFooter),
 						CSS("footer"),
 						Children(
+						//	E(doc.New(TodoCount.WithID("todo-count"))),
 							E(NewTodoCount("todo-count"), Ref(&TodoCount)),
 							E(NewFilterList("filters"), Ref(&FilterList)),
 							E(ClearCompleteBtn("clear-complete"),
@@ -149,12 +146,10 @@ func App() doc.Document {
 
 		s, ok := evt.NewValue().(ui.String)
 		if !ok || s == "" {
-			ui.DEBUG("BAD TODO")
-			return true
+			panic("BAD TODO")
 		}
 		t := NewTodo(s)
 		tdl = append(tdl, t)
-		tlist.NewTodo(t)
 		tlist.SetList(tdl)
 
 		return false
@@ -188,7 +183,7 @@ func App() doc.Document {
 		}
 
 		countcomplete := 0
-		allcomplete := true
+		allcomplete := len(l) > 0
 
 		for _, todo := range l {
 			t := todo.(Todo)
@@ -203,11 +198,12 @@ func App() doc.Document {
 				countcomplete++
 			}
 		}
-		
+		doc.DEBUG("rendering...")
 		tc:= TodoCountFromRef(TodoCount)
-		tc.SetCount(len(l) - countcomplete)
+		var itemsleft = len(l)-countcomplete
+		tc.SetCount(itemsleft)
 
-		if countcomplete == 0 {
+		if itemsleft > 0 {
 			allcomplete =false
 			doc.SetInlineCSS(ClearCompleteButton.AsElement(), "display:none")
 		} else {
@@ -220,7 +216,7 @@ func App() doc.Document {
 			ToggleAllInput.AsElement().SetDataSetUI("checked", ui.Bool(false))
 		}
 		return false
-	}).RunASAP())
+	}))
 
 	AppSection.WatchEvent("toggled", ToggleAllInput, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 		chk,ok:= evt.Origin().Get("ui","checked")
@@ -236,7 +232,7 @@ func App() doc.Document {
 
 		for i, todo := range tdl {
 			t := todo.(Todo)
-			t.Set("completed", status)
+			t.Set("completed", !status)
 			tdl[i]=t				
 		}
 		tlist.SetList(tdl)
@@ -244,7 +240,7 @@ func App() doc.Document {
 		return false
 	}))
 
-	AppSection.WatchEvent( "mounted", MainFooter, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
+	AppSection.WatchEvent("mounted", MainFooter, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 		
 		tlist:= TodoListFromRef(TodosList)
 		tdl := tlist.GetList()
@@ -254,10 +250,10 @@ func App() doc.Document {
 			doc.SetInlineCSS(MainFooter.AsElement(), "display : block")
 		}
 		return false
-	}))
+	}).RunASAP())
 
 	AppSection.Watch("ui","filterslist",TodosList,ui.NewMutationHandler(func(evt ui.MutationEvent)bool{
-		FilterList.AsElement().SetDataSetUI("filterslist",evt.NewValue())
+		FilterList.AsElement().SetUI("filterslist",evt.NewValue())
 		return false
 	}).RunASAP())
 
@@ -270,7 +266,7 @@ func App() doc.Document {
 			doc.SetInlineCSS(MainSection.AsElement(), "display : block")
 		}
 		return false
-	}))
+	}).RunASAP())
 
 	
 	return document
