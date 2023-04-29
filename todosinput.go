@@ -10,7 +10,6 @@ import (
 func NewTodoInput(id string) doc.InputElement {
 	todosinput := doc.Input.WithID(id,"text")
 	doc.SetAttribute(todosinput.AsElement(), "placeholder", "What needs to be done?")
-	//doc.SetAttribute(todosinput.AsElement(), "autofocus", "")
 	doc.SetAttribute(todosinput.AsElement(), "onfocus", "this.value=''")
 	
 	doc.Autofocus(todosinput.AsElement())
@@ -19,6 +18,7 @@ func NewTodoInput(id string) doc.InputElement {
 		v,ok:= evt.Value().(ui.Object).Get("value")
 		if !ok{
 			todosinput.SyncUISetData("value", ui.String(""))
+			return false
 		}
 		s:= v.(ui.String)
 		str := strings.TrimSpace(string(s)) // Trim value

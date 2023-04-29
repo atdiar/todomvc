@@ -29,7 +29,7 @@ func App() doc.Document {
 			if chk != "null"{
 				ischecked = true
 			}
-			evt.Target().SyncUISetData("checked",ui.Bool(!ischecked))
+			evt.Target().SyncUI("checked",ui.Bool(!ischecked))
 		}
 
 		evt.Target().TriggerEvent("toggled")
@@ -172,7 +172,7 @@ func App() doc.Document {
 		return false
 	}))
 
-	AppSection.WatchEvent("renderlist", TodosList.AsElement(), ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
+	AppSection.WatchEvent("updated", TodosList.AsElement(), ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 		tlist:= TodoListFromRef(TodosList)
 		l := tlist.GetList()
 
@@ -198,7 +198,7 @@ func App() doc.Document {
 				countcomplete++
 			}
 		}
-		doc.DEBUG("rendering...")
+
 		tc:= TodoCountFromRef(TodoCount)
 		var itemsleft = len(l)-countcomplete
 		tc.SetCount(itemsleft)
@@ -211,12 +211,12 @@ func App() doc.Document {
 		}
 
 		if allcomplete {
-			ToggleAllInput.AsElement().SetDataSetUI("checked", ui.Bool(true))
+			ToggleAllInput.AsElement().SetUI("checked", ui.Bool(true))
 		} else {
-			ToggleAllInput.AsElement().SetDataSetUI("checked", ui.Bool(false))
+			ToggleAllInput.AsElement().SetUI("checked", ui.Bool(false))
 		}
 		return false
-	}))
+	}).RunASAP())
 
 	AppSection.WatchEvent("toggled", ToggleAllInput, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 		chk,ok:= evt.Origin().Get("ui","checked")
@@ -229,14 +229,31 @@ func App() doc.Document {
 
 
 		tdl := tlist.GetList()
-
+/*
 		for i, todo := range tdl {
 			t := todo.(Todo)
 			t.Set("completed", !status)
-			tdl[i]=t				
+			tdl[i]=t
+			/*tde,ok:=FindTodoElement(doc.GetDocument(evt.Origin().Root()),t)
+			if !ok{
+				panic("todo element not found which should not be possible")
+			}
+			tde.SyncUISetData("todo",t)
+			
 		}
-		tlist.SetList(tdl)
-
+		tlist.SetList(tdl) // TODO try to syncUISetData and SetlIst
+*/
+		for i, todo := range tdl {
+			t := todo.(Todo)
+			t.Set("completed", !status)
+			tdl[i]=t
+			tde,ok:=FindTodoElement(doc.GetDocument(evt.Origin().Root()),t)
+			if !ok{
+				panic("todo element not found which should not be possible")
+			}
+			tde.SetDataSetUI("todo",t)
+		}
+		tlist.UpdateList(tdl)
 		return false
 	}))
 
@@ -257,7 +274,7 @@ func App() doc.Document {
 		return false
 	}).RunASAP())
 
-	MainSection.AsElement().Watch("ui", "todoslist", TodosList, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
+	MainSection.AsElement().WatchEvent("update", TodosList, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 		tlist:= TodoListFromRef(TodosList)
 		tdl := tlist.GetList()
 		if len(tdl) == 0 {

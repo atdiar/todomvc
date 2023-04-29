@@ -65,6 +65,16 @@ var newtodo = doc.Elements.NewConstructor("todo", func(id string) *ui.Element {
 	
 	
 		t := evt.NewValue().(Todo)
+
+		title, _ := t.Get("title")
+		titlestr := title.(ui.String)
+		if len(titlestr) == 0 {
+			evt.Origin().TriggerEvent("delete")
+			return false
+		}
+
+		l.SetText(string(titlestr))
+		edit.SetUI("value", titlestr)
 		
 
 		todocomplete, ok := t.Get("completed")
@@ -79,26 +89,7 @@ var newtodo = doc.Elements.NewConstructor("todo", func(id string) *ui.Element {
 			doc.RemoveClass(li.AsElement(), "completed")
 		}
 
-		todotitle, ok := t.Get("title")
-		if !ok {
-			panic("wrong object type for todo")
-		}
-		todotitlestr := todotitle.(ui.String)
-
-		/*
-		if todocompletebool{
-			doc.SetAttribute(i.AsElement(), "checked","")
-		} else{
-			doc.RemoveAttribute(i.AsElement(), "checked")
-		}
-		*/
-		//ui.DEBUG(i.Get("ui", "checked"))
-		//ui.DEBUG(" vs ",todocompletebool)
-		i.AsElement().SetDataSetUI("checked", todocompletebool)
-
-
-		l.SetText(string(todotitlestr))
-		edit.AsElement().SetDataSetUI("value", todotitlestr)
+		i.AsElement().SetUI("checked", todocompletebool)
 
 		return false
 	}).RunASAP())
@@ -128,7 +119,7 @@ var newtodo = doc.Elements.NewConstructor("todo", func(id string) *ui.Element {
 	}))
 
 	li.AsElement().WatchEvent("edit", li, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
-		li.AsElement().SetDataSetUI("editmode", ui.Bool(true))
+		li.AsElement().SetUI("editmode", ui.Bool(true))
 		return false
 	}))
 
@@ -166,12 +157,12 @@ var newtodo = doc.Elements.NewConstructor("todo", func(id string) *ui.Element {
 
 		v, ok := evt.Value().(ui.Object).Get("value")
 		if !ok {
-			edit.SetDataSetUI("value", ui.String(""))
+			edit.SetUI("value", ui.String(""))
 			return false
 		}
 		s := v.(ui.String)
 		str := strings.TrimSpace(string(s)) // Trim value
-		edit.AsElement().SetDataSetUI("value", ui.String(str))
+		edit.AsElement().SetUI("value", ui.String(str))
 		return false
 	}))
 
@@ -209,7 +200,7 @@ var newtodo = doc.Elements.NewConstructor("todo", func(id string) *ui.Element {
 		}
 		todo := res.(Todo)
 		val, _ := todo.Get("title")
-		edit.AsElement().SetDataSetUI("value", val.(ui.String))
+		edit.AsElement().SetUI("value", val.(ui.String))
 		edit.Blur()
 		return false
 	}))
