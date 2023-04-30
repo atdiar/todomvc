@@ -51,15 +51,15 @@ func App() doc.Document {
 	// TODO the HEAD should be pregenerated at build time
 	E(document.Head(),
 		Children(
-			E(doc.Link.WithID("todocss").
+			E(document.Link.WithID("todocss").
 				SetAttribute("rel","stylesheet").
 				SetAttribute("href","/css/todomvc.css"),
 			),
-			E(doc.Script.WithID("wasmVM").
+			E(document.Script.WithID("wasmVM").
 				Defer().
 				Src("/wasm_exec.js"),
 			),
-			E(doc.Script.WithID("goruntime").
+			E(document.Script.WithID("goruntime").
 				Defer().
 				SetInnerHTML(
 					`
@@ -76,38 +76,38 @@ func App() doc.Document {
 	
 	ui.New(document.Body(),
 		Children(
-			E(doc.AriaChangeAnnouncer),
-			E(doc.Section.WithID("todoapp"),
+			E(doc.AriaChangeAnnouncerFor(document)),
+			E(document.Section.WithID("todoapp"),
 				Ref(&AppSection),
 				CSS("todoapp"),
 				Children(
-					E(doc.Header.WithID("header"),
+					E(document.Header.WithID("header"),
 						CSS("header"),
 						Children(
-							E(doc.H1.WithID("apptitle").SetText("Todo")),
+							E(document.H1.WithID("apptitle").SetText("Todo")),
 							E(NewTodoInput("new-todo"),
 								Ref(&todosinput),
 								CSS("new-todo"),
 							),
 						),
 					),
-					E(doc.Section.WithID("main"),
+					E(document.Section.WithID("main"),
 						Ref(&MainSection),
 						CSS("main"),
 						Children(
-							E(doc.Input.WithID("toggle-all","checkbox"),
+							E(document.Input.WithID("toggle-all","checkbox"),
 								Ref(&ToggleAllInput),
 								CSS("toggle-all"),
 								Listen("click",toggleallhandler),
 							),
-							E(doc.Label().For(ToggleAllInput)),
+							E(document.Label().For(ToggleAllInput)),
 							E(NewTodosListElement("todo-list", doc.EnableLocalPersistence()),
 								Ref(&TodosList),
 								InitRouter(Hijack("/","/all"),doc.RouterConfig),
 							),
 						),
 					),
-					E(doc.Footer.WithID("footer"),
+					E(document.Footer.WithID("footer"),
 						Ref(&MainFooter),
 						CSS("footer"),
 						Children(
@@ -122,13 +122,13 @@ func App() doc.Document {
 					),
 				),
 			),
-			E(doc.Footer(),
+			E(document.Footer(),
 				CSS("info"),
 				Children(
-					E(doc.Paragraph().SetText("Double-click to edit a todo")),
-					E(doc.Paragraph().SetText("Created with: "),
+					E(document.Paragraph().SetText("Double-click to edit a todo")),
+					E(document.Paragraph().SetText("Created with: "),
 						Children(
-							E(doc.Anchor().SetHREF("http://github.com/atdiar/particleui").SetText("ZUI")),
+							E(document.Anchor().SetHREF("http://github.com/atdiar/particleui").SetText("ZUI")),
 						),
 					),
 				),
@@ -247,7 +247,7 @@ func App() doc.Document {
 			t := todo.(Todo)
 			t.Set("completed", !status)
 			tdl[i]=t
-			tde,ok:=FindTodoElement(doc.GetDocument(evt.Origin().Root()),t)
+			tde,ok:=FindTodoElement(doc.GetDocument(evt.Origin()),t)
 			if !ok{
 				panic("todo element not found which should not be possible")
 			}

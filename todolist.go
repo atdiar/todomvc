@@ -78,7 +78,7 @@ var newTodolistElement = doc.Elements.NewConstructor("todoslist", func(id string
 	doc.AddClass(t.AsElement(), "todo-list")
 
 	tview := ui.NewViewElement(t.AsElement(), ui.NewView("all"), ui.NewView("active"), ui.NewView("completed"))
-	ui.UseRouter(t.AsElement(),func(r *ui.Router){
+	t.OnRouterInit(func(r *ui.Router){
 		names:= ui.NewList(ui.String("all"), ui.String("active"), ui.String("completed"))
 		links:= ui.NewList(
 			ui.String(r.NewLink("all").URI()),

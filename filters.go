@@ -46,7 +46,7 @@ var newFilters = doc.Elements.NewConstructor("filters", func(id string) *ui.Elem
 		}
 		urls := urllist.(ui.List)
 
-		ui.UseRouter(evt.Origin(),func(r *ui.Router){
+		evt.Origin().OnRouterInit(func(r *ui.Router){
 			filters := make([]*ui.Element,0,len(urls))
 			for i,url:= range urls{
 				urlstr:= string(url.(ui.String))

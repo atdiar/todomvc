@@ -23,7 +23,7 @@ type TodoElement struct {
 }
 
 
-func FindTodoElement(d *doc.Document, t Todo) (TodoElement, bool) {
+func FindTodoElement(d doc.Document, t Todo) (TodoElement, bool) {
 	todoid, ok := t.Get("id")
 	if !ok {
 		return TodoElement{}, false
