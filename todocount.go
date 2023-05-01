@@ -20,12 +20,12 @@ func TodoCountFromRef(ref *ui.Element) TodoCount{
 	return TodoCount{ref}
 }
 
-func NewTodoCount(id string, options ...string) TodoCount {
-	return TodoCount{doc.LoadFromStorage(newtodocount(id, options...))}
+func NewTodoCount(d doc.Document, id string, options ...string) TodoCount {
+	return TodoCount{doc.LoadFromStorage(newtodocount(d, id, options...))}
 }
 
-var newtodocount = doc.Elements.NewConstructor("todocount", func(id string) *ui.Element {
-	s := doc.Span.WithID(id)
+func newtodocount (document doc.Document, id string, options ...string) *ui.Element {
+	s := document.Span.WithID(id,options...)
 	s.AsElement().Watch("ui", "count", s.AsElement(), ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 		n, ok := evt.NewValue().(ui.Number)
 		if !ok {
@@ -43,4 +43,4 @@ var newtodocount = doc.Elements.NewConstructor("todocount", func(id string) *ui.
 
 	doc.AddClass(s.AsElement(), "todo-count")
 	return s.AsElement()
-}, doc.AllowSessionStoragePersistence, doc.AllowAppLocalStoragePersistence)
+}

@@ -73,8 +73,8 @@ func displayWhen(filter string) func(ui.Value) bool{
 
 
 
-var newTodolistElement = doc.Elements.NewConstructor("todoslist", func(id string) *ui.Element {
-	t := doc.Ul.WithID(id)
+func newTodoListElement(document doc.Document, id string, options ...string) *ui.Element {
+	t := document.Ul.WithID(id, options...)
 	doc.AddClass(t.AsElement(), "todo-list")
 
 	tview := ui.NewViewElement(t.AsElement(), ui.NewView("all"), ui.NewView("active"), ui.NewView("completed"))
@@ -167,16 +167,16 @@ var newTodolistElement = doc.Elements.NewConstructor("todoslist", func(id string
 	}))
 
 	return t.AsElement()
-}, doc.AllowSessionStoragePersistence, doc.AllowAppLocalStoragePersistence)
+}
 
-func NewTodosListElement(id string, options ...string) TodosListElement {
-	return TodosListElement{doc.LoadFromStorage(newTodolistElement(id, options...))}
+func NewTodoList(d doc.Document, id string, options ...string) TodosListElement {
+	return TodosListElement{doc.LoadFromStorage(newTodoListElement(d,id, options...))}
 }
 
 
 func(t TodosListElement) NewTodo(o Todo) TodoElement{
 	
-	ntd := NewTodoElement(o)
+	ntd := newTodoElement(doc.GetDocument(t.AsElement()),o)
 	id, _ := o.Get("id")
 	idstr := id.(ui.String)
 

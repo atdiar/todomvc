@@ -9,9 +9,9 @@ type Filters struct {
 	*ui.Element
 }
 
-func NewFilter(name string, id string, u ui.Link) *ui.Element {
-	li := doc.Li.WithID(id)
-	a := doc.Anchor.WithID(id+"-anchor")
+func NewFilter(document doc.Document, name string, id string, u ui.Link, options ...string) *ui.Element {
+	li := document.Li.WithID(id, options...)
+	a := document.Anchor.WithID(id+"-anchor")
 	a.FromLink(u)
 	li.AsElement().AppendChild(a)
 	a.AsElement().Watch("ui", "active", a, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
@@ -27,8 +27,8 @@ func NewFilter(name string, id string, u ui.Link) *ui.Element {
 	return li.AsElement()
 }
 
-var newFilters = doc.Elements.NewConstructor("filters", func(id string) *ui.Element {
-	e := doc.Ul.WithID(id).AsElement()
+func newFilters(document doc.Document, id string, options ...string) *ui.Element {
+	e := document.Ul.WithID(id, options...).AsElement()
 	doc.AddClass(e, "filters")
 
 	e.Watch("ui","filterslist",e, ui.NewMutationHandler(func(evt ui.MutationEvent)bool{
@@ -53,7 +53,7 @@ var newFilters = doc.Elements.NewConstructor("filters", func(id string) *ui.Elem
 				name := string(names[i].(ui.String))
 				lnk,ok:= r.RetrieveLink(urlstr)
 				if ok{
-					filters = append(filters,NewFilter(name,name+"-filter",lnk).AsElement())
+					filters = append(filters,NewFilter(document, name,name+"-filter",lnk).AsElement())
 				}
 			}
 			evt.Origin().SetChildrenElements(filters...)
@@ -61,10 +61,10 @@ var newFilters = doc.Elements.NewConstructor("filters", func(id string) *ui.Elem
 		return false
 	}))
 	return e
-}, doc.AllowSessionStoragePersistence, doc.AllowAppLocalStoragePersistence)
+}
 
-func NewFilterList(id string, options ...string) Filters {
-	return Filters{doc.LoadFromStorage(newFilters( id, options...))}
+func NewFilterList(document doc.Document, id string, options ...string) Filters {
+	return Filters{doc.LoadFromStorage(newFilters( document, id, options...))}
 }
 
 func ClearCompleteBtn(id string) doc.ButtonElement {

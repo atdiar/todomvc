@@ -40,23 +40,23 @@ func FindTodoElement(d doc.Document, t Todo) (TodoElement, bool) {
 	return TodoElement{todo}, false
 }
 
-var newtodo = doc.Elements.NewConstructor("todo", func(id string) *ui.Element {
-	d := doc.Div.WithID(id + "-view")
+func newtodo(document doc.Document, id string, options ...string) *ui.Element {
+	d := document.Div.WithID(id + "-view")
 	doc.AddClass(d.AsElement(), "view")
 
-	i := doc.Input.WithID(id+"-completed", "checkbox")
+	i := document.Input.WithID(id+"-completed", "checkbox")
 	doc.AddClass(i.AsElement(), "toggle")
 
-	edit := doc.Input.WithID(id+"-edit", "")
+	edit := document.Input.WithID(id+"-edit", "")
 	doc.AddClass(edit.AsElement(), "edit")
 
-	l := doc.Label.WithID(id + "-lbl")
+	l := document.Label.WithID(id + "-lbl")
 
-	b := doc.Button.WithID(id+"-btn", "button")
+	b := document.Button.WithID(id+"-btn", "button")
 	doc.AddClass(b.AsElement(), "destroy")
 
 	d.SetChildren(i, l, b)
-	li := doc.Li.WithID(id).SetChildren(d.AsElement())
+	li := document.Li.WithID(id,options...).SetChildren(d.AsElement())
 
 	edit.AsElement().BindDeletion(li.AsElement())
 
@@ -221,16 +221,16 @@ var newtodo = doc.Elements.NewConstructor("todo", func(id string) *ui.Element {
 
 	return li.AsElement()
 
-}, doc.AllowSessionStoragePersistence, doc.AllowAppLocalStoragePersistence)
+}
 
-func NewTodoElement(t Todo) TodoElement {
+func newTodoElement(d doc.Document, t Todo) TodoElement {
 	todoid, ok := t.Get("id")
 	if !ok {
 		panic("missing todo id")
 	}
 	todoidstr := todoid.(ui.String)
 
-	ntd := doc.LoadFromStorage(newtodo(string(todoidstr)))
+	ntd := doc.LoadFromStorage(newtodo(d, string(todoidstr)))
 	ntd.SetDataSetUI("todo", t)
 
 	return TodoElement{ntd}
