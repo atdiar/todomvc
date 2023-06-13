@@ -44,9 +44,7 @@ func App() doc.Document {
 
 	
 
-	document:= doc.NewDocument("Todo-App")
-	
-	
+	document:= doc.NewDocument("Todo-App", doc.EnableScrollRestoration())
 
 	// TODO the HEAD should be pregenerated at build time
 	E(document.Head(),
@@ -74,7 +72,7 @@ func App() doc.Document {
 	)	
 
 	
-	ui.New(document.Body(),
+	E(document.Body(),
 		Children(
 			E(doc.AriaChangeAnnouncerFor(document)),
 			E(document.Section.WithID("todoapp"),
@@ -85,7 +83,7 @@ func App() doc.Document {
 						CSS("header"),
 						Children(
 							E(document.H1.WithID("apptitle").SetText("Todo")),
-							E(NewTodoInput("new-todo"),
+							E(NewTodoInput(document, "new-todo"),
 								Ref(&todosinput),
 								CSS("new-todo"),
 							),
@@ -103,7 +101,7 @@ func App() doc.Document {
 							E(document.Label().For(ToggleAllInput)),
 							E(NewTodoList(document,"todo-list", doc.EnableLocalPersistence()),
 								Ref(&TodosList),
-								InitRouter(Hijack("/","/all"),doc.RouterConfig),
+								InitRouter(Hijack("/","/all")),
 							),
 						),
 					),
@@ -113,7 +111,7 @@ func App() doc.Document {
 						Children(
 							E(NewTodoCount(document,"todo-count"), Ref(&TodoCount)),
 							E(NewFilterList(document, "filters"), Ref(&FilterList)),
-							E(ClearCompleteBtn("clear-complete"),
+							E(ClearCompleteBtn(document, "clear-complete"),
 								Ref(&ClearCompleteButton),
 								Listen("click",ClearCompleteHandler),
 							),
@@ -148,7 +146,7 @@ func App() doc.Document {
 			panic("BAD TODO")
 		}
 		t := NewTodo(s)
-		tdl = append(tdl, t)
+		tdl = tdl.MakeCopy().Append(t).Commit()
 		tlist.SetList(tdl)
 
 		return false
@@ -158,16 +156,16 @@ func App() doc.Document {
 		tlist:= TodoListFromRef(TodosList)
 		tdl := tlist.GetList()
 		ntdl := ui.NewList()
-		for _, todo := range tdl {
+		for _, todo := range tdl.Unwrap() {
 			t := todo.(Todo)
 			c, _ := t.Get("completed")
 			cpl := c.(ui.Bool)
 			if !cpl {
-				ntdl = append(ntdl, todo)
+				ntdl = ntdl.Append(todo)
 			}
 		}
 
-		tlist.SetList(ntdl)
+		tlist.SetList(ntdl.Commit())
 		return false
 	}))
 
@@ -175,16 +173,16 @@ func App() doc.Document {
 		tlist:= TodoListFromRef(TodosList)
 		l := tlist.GetList()
 
-		if len(l) == 0 {
+		if len(l.Unwrap()) == 0 {
 			doc.SetInlineCSS(MainFooter.AsElement(), "display:none")
 		} else {
 			doc.SetInlineCSS(MainFooter.AsElement(), "display:block")
 		}
 
 		countcomplete := 0
-		allcomplete := len(l) > 0
+		allcomplete := len(l.Unwrap()) > 0
 
-		for _, todo := range l {
+		for _, todo := range l.Unwrap() {
 			t := todo.(Todo)
 			completed, ok := t.Get("completed")
 			if !ok {
@@ -199,7 +197,7 @@ func App() doc.Document {
 		}
 
 		tc:= TodoCountFromRef(TodoCount)
-		var itemsleft = len(l)-countcomplete
+		var itemsleft = len(l.Unwrap())-countcomplete
 		tc.SetCount(itemsleft)
 
 		if itemsleft > 0 {
@@ -215,7 +213,7 @@ func App() doc.Document {
 			ToggleAllInput.AsElement().SetUI("checked", ui.Bool(false))
 		}
 		return false
-	}).RunASAP())
+	}))
 
 	AppSection.WatchEvent("toggled", ToggleAllInput, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 		chk,ok:= evt.Origin().Get("ui","checked")
@@ -228,20 +226,19 @@ func App() doc.Document {
 
 
 		tdl := tlist.GetList()
-/*
-		for i, todo := range tdl {
+		ntdl := tdl.MakeCopy()
+
+		for i, todo := range tdl.Unwrap() {
 			t := todo.(Todo)
-			t.Set("completed", !status)
-			tdl[i]=t
-			/*tde,ok:=FindTodoElement(doc.GetDocument(evt.Origin().Root()),t)
-			if !ok{
-				panic("todo element not found which should not be possible")
-			}
-			tde.SyncUISetData("todo",t)
-			
+			t= t.MakeCopy().Set("completed", !status).Commit()
+			ntdl.Set(i,t)		
 		}
-		tlist.SetList(tdl) // TODO try to syncUISetData and SetlIst
-*/
+		tlist.SetList(ntdl.Commit())
+
+/* 		
+		// This is buggy.. there is no code that removes or add the todoElement on screen when the 
+		// list gets updated. it needs ot be implemented
+
 		for i, todo := range tdl {
 			t := todo.(Todo)
 			t.Set("completed", !status)
@@ -253,14 +250,17 @@ func App() doc.Document {
 			tde.SetDataSetUI("todo",t)
 		}
 		tlist.UpdateList(tdl)
+		*/
 		return false
 	}))
+
+	
 
 	AppSection.WatchEvent("mounted", MainFooter, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 		
 		tlist:= TodoListFromRef(TodosList)
 		tdl := tlist.GetList()
-		if len(tdl) == 0 {
+		if len(tdl.Unwrap()) == 0 {
 			doc.SetInlineCSS(MainFooter.AsElement(), "display : none")
 		} else {
 			doc.SetInlineCSS(MainFooter.AsElement(), "display : block")
@@ -276,7 +276,7 @@ func App() doc.Document {
 	MainSection.AsElement().WatchEvent("update", TodosList, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 		tlist:= TodoListFromRef(TodosList)
 		tdl := tlist.GetList()
-		if len(tdl) == 0 {
+		if len(tdl.Unwrap()) == 0 {
 			doc.SetInlineCSS(MainSection.AsElement(), "display : none")
 		} else {
 			doc.SetInlineCSS(MainSection.AsElement(), "display : block")

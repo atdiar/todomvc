@@ -7,8 +7,8 @@ import (
 	"github.com/atdiar/particleui/drivers/js"
 )
 
-func NewTodoInput(id string) doc.InputElement {
-	todosinput := doc.Input.WithID(id,"text")
+func NewTodoInput(document doc.Document, id string, options ...string) doc.InputElement {
+	todosinput := document.Input.WithID(id,"text", options...)
 	doc.SetAttribute(todosinput.AsElement(), "placeholder", "What needs to be done?")
 	doc.SetAttribute(todosinput.AsElement(), "onfocus", "this.value=''")
 	
@@ -17,12 +17,12 @@ func NewTodoInput(id string) doc.InputElement {
 	todosinput.AsElement().AddEventListener("change", ui.NewEventHandler(func(evt ui.Event) bool {
 		v,ok:= evt.Value().(ui.Object).Get("value")
 		if !ok{
-			todosinput.SyncUISetData("value", ui.String(""))
+			todosinput.SyncUISyncData("value", ui.String(""))
 			return false
 		}
 		s:= v.(ui.String)
 		str := strings.TrimSpace(string(s)) // Trim value
-		todosinput.SyncUISetData("value", ui.String(str))
+		todosinput.SyncUISyncData("value", ui.String(str))
 		return false
 	}))
 
@@ -33,14 +33,17 @@ func NewTodoInput(id string) doc.InputElement {
 
 		if v == "Enter" {
 			evt.PreventDefault()
+
 			if todosinput.Value() != "" {
 				todosinput.AsElement().TriggerEvent("newtodo", todosinput.Value())
 			}
-			todosinput.AsElement().SyncUISetData("value", ui.String(""))
+			todosinput.AsElement().SyncUISyncData("value", ui.String(""))
 			todosinput.Clear()
 		}
 		return false
 	}))
+
+	document.NewComponent(todosinput)
 
 	return todosinput
 }

@@ -1,21 +1,39 @@
 package main
 
 import (
+	"math/rand"
+	"time"
 	"strings"
 
 	"github.com/atdiar/particleui"
 	"github.com/atdiar/particleui/drivers/js"
+	. "github.com/atdiar/particleui/drivers/js/declarative"
 )
+
+func newIDgenerator(charlen int, seed int64) func() string {
+	source := rand.NewSource(seed)
+	r := rand.New(source)
+	return func() string {
+		var letter = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+		b := make([]rune, charlen)
+		for i := range b {
+			b[i] = letter[r.Intn(len(letter))]
+		}
+		return string(b)
+	}
+}
+
+
+var NewID = newIDgenerator(16,time.Now().UnixNano())
 
 type Todo = ui.Object
 
 func NewTodo(title ui.String) Todo {
-	NewID := doc.Elements.NewID
 	o := ui.NewObject()
 	o.Set("id", ui.String(NewID()))
 	o.Set("completed", ui.Bool(false))
 	o.Set("title", title)
-	return o
+	return o.Commit()
 }
 
 type TodoElement struct {
@@ -26,11 +44,11 @@ type TodoElement struct {
 func FindTodoElement(d doc.Document, t Todo) (TodoElement, bool) {
 	todoid, ok := t.Get("id")
 	if !ok {
-		return TodoElement{}, false
+		panic("wrong todo format! id is required")
 	}
 	todoidstr, ok := todoid.(ui.String)
 	if !ok {
-		return TodoElement{}, false
+		panic("todo id should be a string!")
 	}
 
 	todo := d.GetElementById(string(todoidstr))
@@ -41,28 +59,44 @@ func FindTodoElement(d doc.Document, t Todo) (TodoElement, bool) {
 }
 
 func newtodo(document doc.Document, id string, options ...string) *ui.Element {
-	d := document.Div.WithID(id + "-view")
-	doc.AddClass(d.AsElement(), "view")
 
-	i := document.Input.WithID(id+"-completed", "checkbox")
-	doc.AddClass(i.AsElement(), "toggle")
+	var li *ui.Element
+	var i *ui.Element
+	var l *ui.Element
+	var b *ui.Element
+
+	t:= E(document.Li.WithID(id,options...),
+			Ref(&li),
+			Children(
+				E(document.Div.WithID(id+"-view"),
+					CSS("view"),
+					Children(
+						E(document.Input.WithID(id+"-completed","checkbox"),
+							Ref(&i),
+							CSS("toggle"),
+						),
+						E(document.Label(),
+							Ref(&l),
+						),
+						E(document.Button.WithID(id+"-btn","button"),
+							Ref(&b),
+							CSS("destroy"),
+						),
+					),
+				),
+			),
+		)
+
+
+
 
 	edit := document.Input.WithID(id+"-edit", "")
 	doc.AddClass(edit.AsElement(), "edit")
-
-	l := document.Label.WithID(id + "-lbl")
-
-	b := document.Button.WithID(id+"-btn", "button")
-	doc.AddClass(b.AsElement(), "destroy")
-
-	d.SetChildren(i, l, b)
-	li := document.Li.WithID(id,options...).SetChildren(d.AsElement())
 
 	edit.AsElement().BindDeletion(li.AsElement())
 
 
 	li.Watch("ui","todo", li, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
-	
 	
 		t := evt.NewValue().(Todo)
 
@@ -73,13 +107,13 @@ func newtodo(document doc.Document, id string, options ...string) *ui.Element {
 			return false
 		}
 
-		l.SetText(string(titlestr))
+		doc.LabelElement{l}.SetText(string(titlestr))
 		edit.SetUI("value", titlestr)
 		
 
 		todocomplete, ok := t.Get("completed")
 		if !ok {
-			return true
+			panic("wrong todo format. Should have completed property")
 		}
 		todocompletebool := todocomplete.(ui.Bool)
 
@@ -88,11 +122,12 @@ func newtodo(document doc.Document, id string, options ...string) *ui.Element {
 		} else {
 			doc.RemoveClass(li.AsElement(), "completed")
 		}
-
-		i.AsElement().SetUI("checked", todocompletebool)
+	
+		i.SetUI("checked", todocompletebool)
+		
 
 		return false
-	}).RunASAP())
+	}))
 
 	
 
@@ -111,7 +146,7 @@ func newtodo(document doc.Document, id string, options ...string) *ui.Element {
 		}
 		complete := !(b.(ui.Bool))
 
-		todo.Set("completed", ui.Bool(complete))
+		todo = todo.MakeCopy().Set("completed", ui.Bool(complete)).Commit()
 
 		evt.Origin().SetDataSetUI("todo", todo)
 
@@ -173,7 +208,7 @@ func newtodo(document doc.Document, id string, options ...string) *ui.Element {
 		}
 		if v := val.(ui.String); v == "Escape" {
 			evt.PreventDefault()
-			edit.AsElement().TriggerEvent("canceledit", ui.Bool(true))
+			edit.AsElement().TriggerEvent("canceledit")
 			return false
 		}
 		if v := val.(ui.String); v == "Enter" {
@@ -196,7 +231,7 @@ func newtodo(document doc.Document, id string, options ...string) *ui.Element {
 	li.AsElement().WatchEvent("canceledit", edit, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 		res, ok := li.AsElement().GetData("todo")
 		if !ok {
-			return true
+			panic("todo should have a data prop")
 		}
 		todo := res.(Todo)
 		val, _ := todo.Get("title")
@@ -213,13 +248,13 @@ func newtodo(document doc.Document, id string, options ...string) *ui.Element {
 		}
 		todo := res.(Todo)
 
-		todo.Set("title", evt.NewValue())
+		todo = todo.MakeCopy().Set("title", evt.NewValue()).Commit()
 		li.AsElement().SetDataSetUI("todo", todo)
 		edit.AsElement().TriggerEvent("edit", ui.Bool(false))
 		return false
 	}))
 
-	return li.AsElement()
+	return document.NewComponent(t)
 
 }
 
@@ -230,7 +265,7 @@ func newTodoElement(d doc.Document, t Todo) TodoElement {
 	}
 	todoidstr := todoid.(ui.String)
 
-	ntd := doc.LoadFromStorage(newtodo(d, string(todoidstr)))
+	ntd := newtodo(d, string(todoidstr))
 	ntd.SetDataSetUI("todo", t)
 
 	return TodoElement{ntd}

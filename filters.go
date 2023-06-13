@@ -24,7 +24,7 @@ func NewFilter(document doc.Document, name string, id string, u ui.Link, options
 		return false
 	}))
 	a.SetText(name)
-	return li.AsElement()
+	return document.NewComponent(li)
 }
 
 func newFilters(document doc.Document, id string, options ...string) *ui.Element {
@@ -46,30 +46,31 @@ func newFilters(document doc.Document, id string, options ...string) *ui.Element
 		}
 		urls := urllist.(ui.List)
 
-		evt.Origin().OnRouterInit(func(r *ui.Router){
-			filters := make([]*ui.Element,0,len(urls))
-			for i,url:= range urls{
+		evt.Origin().OnRouterMounted(func(r *ui.Router){
+			filters := make([]*ui.Element,0,len(urls.Unwrap()))
+			for i,url:= range urls.Unwrap(){
 				urlstr:= string(url.(ui.String))
-				name := string(names[i].(ui.String))
+				name := string(names.Get(i).(ui.String))
 				lnk,ok:= r.RetrieveLink(urlstr)
 				if ok{
 					filters = append(filters,NewFilter(document, name,name+"-filter",lnk).AsElement())
 				}
 			}
-			evt.Origin().SetChildrenElements(filters...)
+			evt.Origin().SetChildren(filters...)
 		})
 		return false
 	}))
-	return e
+	return document.NewComponent(e)
 }
 
 func NewFilterList(document doc.Document, id string, options ...string) Filters {
-	return Filters{doc.LoadFromStorage(newFilters( document, id, options...))}
+	return Filters{newFilters( document, id, options...)}
 }
 
-func ClearCompleteBtn(id string) doc.ButtonElement {
-	b := doc.Button.WithID(id, "button")
+func ClearCompleteBtn(document doc.Document, id string, options ...string) doc.ButtonElement {
+	b := document.Button.WithID(id, "button", options...)
 	b.SetText("Clear completed")
 	doc.AddClass(b.AsElement(), "clear-completed")
+	document.NewComponent(b)
 	return b
 }

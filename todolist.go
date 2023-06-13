@@ -13,11 +13,11 @@ func (t TodosListElement) GetList() ui.List {
 	var tdl ui.List
 	res, ok := t.AsElement().Get("ui", "todoslist")
 	if !ok {
-		tdl = ui.NewList()
+		tdl = ui.NewList().Commit()
 	}
 	tdl, ok = res.(ui.List)
 	if !ok {
-		tdl = ui.NewList()
+		tdl = ui.NewList().Commit()
 	}
 	return tdl
 }
@@ -28,7 +28,7 @@ func (t TodosListElement) SetList(tdl ui.List) TodosListElement {
 }
 
 func(t TodosListElement) UpdateList(tdl ui.List) TodosListElement{
-	t.SyncUISetData("todoslist", tdl)
+	t.SyncUISyncData("todoslist", tdl)
 	t.signalUpdate()
 	return t
 }
@@ -78,18 +78,18 @@ func newTodoListElement(document doc.Document, id string, options ...string) *ui
 	doc.AddClass(t.AsElement(), "todo-list")
 
 	tview := ui.NewViewElement(t.AsElement(), ui.NewView("all"), ui.NewView("active"), ui.NewView("completed"))
-	t.OnRouterInit(func(r *ui.Router){
-		names:= ui.NewList(ui.String("all"), ui.String("active"), ui.String("completed"))
+	t.OnRouterMounted(func(r *ui.Router){
+		names:= ui.NewList(ui.String("all"), ui.String("active"), ui.String("completed")).Commit()
 		links:= ui.NewList(
 			ui.String(r.NewLink("all").URI()),
 			ui.String(r.NewLink("active").URI()),
 			ui.String(r.NewLink("completed").URI()),
-		)
+		).Commit()
 		filterslist:=ui.NewObject()
 		filterslist.Set("names",names)
 		filterslist.Set("urls",links)
 
-		t.AsElement().SetUI("filterslist",filterslist)
+		t.AsElement().SetUI("filterslist",filterslist.Commit())
 	})
 
 	tview.AsElement().Watch("ui","filter", tview,ui.NewMutationHandler(func(evt ui.MutationEvent)bool{
@@ -98,6 +98,18 @@ func newTodoListElement(document doc.Document, id string, options ...string) *ui
 	}))
 
 	tview.AsElement().Watch("ui","todoslist", tview,ui.NewMutationHandler(func(evt ui.MutationEvent)bool{
+		newlist:= evt.NewValue().(ui.List)
+
+		for _, v := range newlist.Unwrap() {
+			o:= v.(Todo)
+			ntd, ok := FindTodoElement(doc.GetDocument(evt.Origin()),o)
+			if !ok {
+				ntd = TodosListElement{evt.Origin()}.NewTodo(o)
+			}else{
+				ntd.SetDataSetUI("todo",o) // TODO defer ?
+			}	
+		}
+
 		TodosListElement{evt.Origin()}.signalUpdate()
 		evt.Origin().TriggerEvent("renderlist")
 		return false
@@ -121,10 +133,7 @@ func newTodoListElement(document doc.Document, id string, options ...string) *ui
 	}))
 
 	t.WatchEvent("renderlist", t, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
-		ui.DEBUG("rendering...")
 		t:= evt.Origin()
-
-		t.RemoveChildren()
 		
 		// Retrieve current filter
 		filterval,ok:= t.Get("ui","filter")
@@ -135,33 +144,29 @@ func newTodoListElement(document doc.Document, id string, options ...string) *ui
 			filter = string(filterval.(ui.String))
 		}
 
-
 		// Retrieve current todos list
 		todoslist,ok:= t.Get("ui","todoslist")
 		var newlist ui.List
 		if !ok{
-			newlist = ui.NewList()
+			newlist = ui.NewList().Commit()
 		} else{
 			newlist = todoslist.(ui.List)
 		}
+		
 
-		newChildren := make([]*ui.Element, 0, len(newlist))
+		newChildren := make([]*ui.Element, 0, len(newlist.Unwrap()))
 
-		for _, v := range newlist {
+		for _, v := range newlist.Unwrap() {
 			o:= v.(Todo)
 			if displayWhen(filter)(o){
 				ntd, ok := FindTodoElement(doc.GetDocument(evt.Origin()),o)
 				if !ok {
-					ntd = TodosListElement{t}.NewTodo(o)
-				}else{
-					ui.DEBUG("todo existed already")
-					ntd.SetDataSetUI("todo",o) // TODO use SyncUI
-				}	
+					panic("todo not found for rendering...")
+				}
 				newChildren = append(newChildren, ntd.AsElement())
 			}
 		}
-
-		t.SetChildrenElements(newChildren...)
+		t.SetChildren(newChildren...)
 		
 		return false
 	}))
@@ -170,7 +175,7 @@ func newTodoListElement(document doc.Document, id string, options ...string) *ui
 }
 
 func NewTodoList(d doc.Document, id string, options ...string) TodosListElement {
-	return TodosListElement{doc.LoadFromStorage(newTodoListElement(d,id, options...))}
+	return TodosListElement{d.NewComponent(newTodoListElement(d,id, options...))}
 }
 
 
@@ -180,32 +185,26 @@ func(t TodosListElement) NewTodo(o Todo) TodoElement{
 	id, _ := o.Get("id")
 	idstr := id.(ui.String)
 
-	t.Watch("ui", "todo", ntd, ui.NewMutationHandler(func(evt ui.MutationEvent) bool { // escalate back to the todolist the data changes issued at the todo Element level
+	t.Watch("ui", "todo", ntd, ui.NewMutationHandler(func(evt ui.MutationEvent) bool { // escalates back to the todolist the data changes issued at the todo Element level
 		var tdl ui.List
 		res, ok := t.GetUI("todoslist")
 		if !ok {
-			tdl = ui.NewList()
+			tdl = ui.NewList().Commit()
 		} else {
 			tdl = res.(ui.List)
 		}
 
 		newval := evt.NewValue()
 
-		filter,_:= t.GetUI("filter")
+		rawlist:= tdl.Unwrap()
 
-		for i, rawtodo := range tdl {
+		for i, rawtodo := range rawlist {
 			todo := rawtodo.(Todo)
 			oldid, _ := todo.Get("id")
 
 			if oldid == idstr {
-				if !ui.Equal(rawtodo, newval){
-					tdl[i] = newval
-					t.UpdateList(tdl)
-
-					if !displayWhen(string(filter.(ui.String)))(newval.(Todo)){
-						evt.Origin().Parent.RemoveChild(evt.Origin())
-					}
-				}				
+				rawlist[i]=newval
+				t.SetList(ui.NewListFrom(rawlist))			
 				break
 			}
 		}
@@ -216,14 +215,14 @@ func(t TodosListElement) NewTodo(o Todo) TodoElement{
 		var tdl ui.List
 		res, ok := t.AsElement().GetUI("todoslist")
 		if !ok {
-			tdl = ui.NewList()
+			tdl = ui.NewList().Commit()
 		} else {
 			tdl = res.(ui.List)
 		}
-		ntdl := tdl[:0]
+		ntdl := ui.NewList()
 		var i int
 		
-		for _, rawtodo := range tdl {
+		for _, rawtodo := range tdl.Unwrap() {
 			todo := rawtodo.(Todo)
 			oldid, _ := todo.Get("id")
 			if oldid == idstr {
@@ -233,11 +232,11 @@ func(t TodosListElement) NewTodo(o Todo) TodoElement{
 				}
 				continue
 			}
-			ntdl= append(ntdl,rawtodo)
+			ntdl= ntdl.Append(rawtodo)
 			i++
 		}
-		ntdl = ntdl[:i]
-		t.UpdateList(ntdl)
+
+		t.SetList(ntdl.Commit())
 		return false
 	}))
 

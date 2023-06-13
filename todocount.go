@@ -2,6 +2,7 @@ package main
 
 import (
 	"strconv"
+	"strings"
 
 	"github.com/atdiar/particleui"
 	"github.com/atdiar/particleui/drivers/js"
@@ -21,7 +22,7 @@ func TodoCountFromRef(ref *ui.Element) TodoCount{
 }
 
 func NewTodoCount(d doc.Document, id string, options ...string) TodoCount {
-	return TodoCount{doc.LoadFromStorage(newtodocount(d, id, options...))}
+	return TodoCount{newtodocount(d, id, options...)}
 }
 
 func newtodocount (document doc.Document, id string, options ...string) *ui.Element {
@@ -36,11 +37,11 @@ func newtodocount (document doc.Document, id string, options ...string) *ui.Elem
 		if nn > 1 {
 			i = "items"
 		}
-		htmlstr := "<strong>" + strconv.Itoa(nn) + "<strong>" + " " + i + " left"
+		htmlstr := strings.Join([]string{"<strong>",strconv.Itoa(nn),"<strong>"," ",i," left"},"")
 		doc.SetInnerHTML(s.AsElement(), htmlstr)
 		return false
 	}).RunASAP())
 
 	doc.AddClass(s.AsElement(), "todo-count")
-	return s.AsElement()
+	return document.NewComponent(s)
 }
