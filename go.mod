@@ -19,4 +19,4 @@ replace github.com/atdiar/particleui/drivers/js/declarative v0.0.0-2022061012153
 //require github.com/atdiar/particleui/drivers/js v0.0.0-20220517212927-bff105de2679
 //replace github.com/atdiar/particleui/driver/js v0.0.0-20220517212927-bff105de2679 =>  /home/atd/Desktop/Projects/particleui/drivers/js
 
-require golang.org/x/net v0.9.0 // indirect
+require golang.org/x/net v0.11.0 // indirect

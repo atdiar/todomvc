@@ -169,6 +169,19 @@ func newtodo(document doc.Document, id string, options ...string) *ui.Element {
 			doc.RemoveClass(li.AsElement(), "editing")
 			li.AsElement().RemoveChild(edit.AsElement())
 		}
+
+		return false
+	}))
+
+	li.WatchEvent("edit", li, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
+		rt, ok:= li.GetData("todo")
+		if !ok{
+			panic("todo data should be present")
+		}
+		todo := rt.(Todo)
+		title := todo.MustGetString("title")
+		edit.SetDataSetUI("value", title)
+		li.AsElement().Set("ui", "editmode", evt.NewValue())
 		return false
 	}))
 
@@ -192,27 +205,32 @@ func newtodo(document doc.Document, id string, options ...string) *ui.Element {
 
 		v, ok := evt.Value().(ui.Object).Get("value")
 		if !ok {
-			edit.SetUI("value", ui.String(""))
+			evt.CurrentTarget().SyncUI("value", ui.String(""))
 			return false
 		}
 		s := v.(ui.String)
 		str := strings.TrimSpace(string(s)) // Trim value
-		edit.AsElement().SetUI("value", ui.String(str))
+		evt.CurrentTarget().SyncUI("value", ui.String(str))
 		return false
 	}))
 
-	edit.AsElement().AddEventListener("keyup", ui.NewEventHandler(func(evt ui.Event) bool {
+	edit.AddEventListener("keyup", ui.NewEventHandler(func(evt ui.Event) bool {
 		val, ok := evt.Value().(ui.Object).Get("key")
 		if !ok {
 			panic("framework error: unable to find event key")
 		}
 		if v := val.(ui.String); v == "Escape" {
 			evt.PreventDefault()
-			edit.AsElement().TriggerEvent("canceledit")
+			evt.CurrentTarget().TriggerEvent("canceledit")
 			return false
 		}
 		if v := val.(ui.String); v == "Enter" {
 			evt.PreventDefault()
+			uival,ok:= evt.CurrentTarget().Get("ui","value")
+			if !ok{
+				panic("value should be present")
+			}
+			evt.CurrentTarget().SyncData("value", uival)
 			edit.Blur()
 		}
 		return false
@@ -228,14 +246,12 @@ func newtodo(document doc.Document, id string, options ...string) *ui.Element {
 		return false
 	}))
 
-	li.AsElement().WatchEvent("canceledit", edit, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
-		res, ok := li.AsElement().GetData("todo")
+	edit.WatchEvent("canceledit", edit, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
+		val, ok := evt.Origin().GetData("value")
 		if !ok {
 			panic("todo should have a data prop")
 		}
-		todo := res.(Todo)
-		val, _ := todo.Get("title")
-		edit.AsElement().SetUI("value", val.(ui.String))
+		edit.AsElement().SetDataSetUI("value", val.(ui.String))
 		edit.Blur()
 		return false
 	}))
@@ -243,8 +259,7 @@ func newtodo(document doc.Document, id string, options ...string) *ui.Element {
 	li.AsElement().WatchEvent("newtitle", edit, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 		res, ok := li.AsElement().GetData("todo")
 		if !ok {
-			// TODO maybe a debug statement although it should not happen.
-			return true
+			panic("todo data should be present")
 		}
 		todo := res.(Todo)
 
@@ -254,7 +269,7 @@ func newtodo(document doc.Document, id string, options ...string) *ui.Element {
 		return false
 	}))
 
-	return document.NewComponent(t)
+	return t
 
 }
 

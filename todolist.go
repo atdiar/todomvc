@@ -100,7 +100,7 @@ func newTodoListElement(document doc.Document, id string, options ...string) *ui
 	tview.AsElement().Watch("ui","todoslist", tview,ui.NewMutationHandler(func(evt ui.MutationEvent)bool{
 		newlist:= evt.NewValue().(ui.List)
 
-		for _, v := range newlist.Unwrap() {
+		for _, v := range newlist.UnsafelyUnwrap() {
 			o:= v.(Todo)
 			ntd, ok := FindTodoElement(doc.GetDocument(evt.Origin()),o)
 			if !ok {
@@ -133,6 +133,7 @@ func newTodoListElement(document doc.Document, id string, options ...string) *ui
 	}))
 
 	t.WatchEvent("renderlist", t, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
+
 		t:= evt.Origin()
 		
 		// Retrieve current filter
@@ -154,9 +155,9 @@ func newTodoListElement(document doc.Document, id string, options ...string) *ui
 		}
 		
 
-		newChildren := make([]*ui.Element, 0, len(newlist.Unwrap()))
+		newChildren := make([]*ui.Element, 0, len(newlist.UnsafelyUnwrap()))
 
-		for _, v := range newlist.Unwrap() {
+		for _, v := range newlist.UnsafelyUnwrap() {
 			o:= v.(Todo)
 			if displayWhen(filter)(o){
 				ntd, ok := FindTodoElement(doc.GetDocument(evt.Origin()),o)
@@ -175,7 +176,7 @@ func newTodoListElement(document doc.Document, id string, options ...string) *ui
 }
 
 func NewTodoList(d doc.Document, id string, options ...string) TodosListElement {
-	return TodosListElement{d.NewComponent(newTodoListElement(d,id, options...))}
+	return TodosListElement{newTodoListElement(d,id, options...)}
 }
 
 
@@ -196,7 +197,7 @@ func(t TodosListElement) NewTodo(o Todo) TodoElement{
 
 		newval := evt.NewValue()
 
-		rawlist:= tdl.Unwrap()
+		rawlist:= tdl.UnsafelyUnwrap()
 
 		for i, rawtodo := range rawlist {
 			todo := rawtodo.(Todo)
@@ -222,7 +223,7 @@ func(t TodosListElement) NewTodo(o Todo) TodoElement{
 		ntdl := ui.NewList()
 		var i int
 		
-		for _, rawtodo := range tdl.Unwrap() {
+		for _, rawtodo := range tdl.UnsafelyUnwrap() {
 			todo := rawtodo.(Todo)
 			oldid, _ := todo.Get("id")
 			if oldid == idstr {

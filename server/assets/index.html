@@ -6,13 +6,35 @@
 	
 	<base href="/">
 	<link id ="todocss" rel="stylesheet" href="/css/todomvc.css">
+	
 	<script id="wasmVM" src="/wasm_exec.js"></script>
 	<script id="goruntime">
 		const go = new Go();
-            WebAssembly.instantiateStreaming(fetch("app.wasm"), go.importObject).then((result) => {
-                go.run(result.instance);
+        WebAssembly.instantiateStreaming(fetch("/app.wasm"), go.importObject).then((result) => {
+            go.run(result.instance);
+            wasmReady = true;
+
+            // If 'load' event was already fired before WASM was ready,
+            // manually dispatch the custom event
+            if (document.readyState === 'complete') {
+                window.dispatchEvent(new Event('wasmAndPageReady'));
+            }
+
+            window.addEventListener('load', () => {
+                // If WASM was ready before 'load' event, manually dispatch the custom event
+                if (wasmReady) {
+                    window.dispatchEvent(new Event('wasmAndPageReady'));
+                }
             });
+        });
 	</script>
+	
+	<!-- 
+	<script src="gopherjs.js.map"></script>
+	<script src="todomvc.js.map"></script>
+	<script src="gopherjs.js"></script>
+	<script id="todomvcjs" src="/js/todomvc.js"></script>
+	-->
 </head>
 
 <body>

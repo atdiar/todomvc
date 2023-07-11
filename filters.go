@@ -24,7 +24,7 @@ func NewFilter(document doc.Document, name string, id string, u ui.Link, options
 		return false
 	}))
 	a.SetText(name)
-	return document.NewComponent(li)
+	return li.AsElement()
 }
 
 func newFilters(document doc.Document, id string, options ...string) *ui.Element {
@@ -47,8 +47,8 @@ func newFilters(document doc.Document, id string, options ...string) *ui.Element
 		urls := urllist.(ui.List)
 
 		evt.Origin().OnRouterMounted(func(r *ui.Router){
-			filters := make([]*ui.Element,0,len(urls.Unwrap()))
-			for i,url:= range urls.Unwrap(){
+			filters := make([]*ui.Element,0,len(urls.UnsafelyUnwrap()))
+			for i,url:= range urls.UnsafelyUnwrap(){
 				urlstr:= string(url.(ui.String))
 				name := string(names.Get(i).(ui.String))
 				lnk,ok:= r.RetrieveLink(urlstr)
@@ -60,7 +60,7 @@ func newFilters(document doc.Document, id string, options ...string) *ui.Element
 		})
 		return false
 	}))
-	return document.NewComponent(e)
+	return e
 }
 
 func NewFilterList(document doc.Document, id string, options ...string) Filters {
@@ -71,6 +71,6 @@ func ClearCompleteBtn(document doc.Document, id string, options ...string) doc.B
 	b := document.Button.WithID(id, "button", options...)
 	b.SetText("Clear completed")
 	doc.AddClass(b.AsElement(), "clear-completed")
-	document.NewComponent(b)
+	
 	return b
 }

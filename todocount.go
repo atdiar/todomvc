@@ -43,5 +43,5 @@ func newtodocount (document doc.Document, id string, options ...string) *ui.Elem
 	}).RunASAP())
 
 	doc.AddClass(s.AsElement(), "todo-count")
-	return document.NewComponent(s)
+	return s.AsElement()
 }

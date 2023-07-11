@@ -1,12 +1,8 @@
-github.com/atdiar/particleui v0.0.0-20230122214250-bce6d7aa4109 h1:x7cM45X0Y8IRsAFL6wdewPP98K+wPyvmBplyYaQR6h0=
 github.com/atdiar/particleui v0.0.0-20230328104714-567a015a7470 h1:t2d0vRo9kaarSEd3j3+R8z2xFG5NNeRZ4Y6pqgc41+M=
 github.com/atdiar/particleui v0.0.0-20230328104714-567a015a7470/go.mod h1:exOkQ0uHKrLBBL+hgLFAHgQadYqjkW0XPv7C815RTfY=
 github.com/atdiar/particleui/drivers/js v0.0.0-20230328104714-567a015a7470 h1:omeljsvXqBrOQDZZ0SO6qNWh51qvlGIl6bOwPkK5KXU=
 github.com/atdiar/particleui/drivers/js v0.0.0-20230328104714-567a015a7470/go.mod h1:xSKgXD2IdCh3pxheqlNy6+CrvCIEAAw9NyEA6hdMH5Q=
 github.com/atdiar/particleui/drivers/js/declarative v0.0.0-20230328104714-567a015a7470 h1:6uwH33fu1DmcFIMM32+KJPPYDF4Ppoou8XKPT76LiCY=
 github.com/atdiar/particleui/drivers/js/declarative v0.0.0-20230328104714-567a015a7470/go.mod h1:wB3hlTlYgNBAkGTAXy5PPivqwTkO7VBcZkt12UlkwR8=
-github.com/goccy/go-json v0.10.2 h1:CrxCmQqYDkv1z7lO7Wbh2HN93uovUHgrECaO5ZrCXAU=
-github.com/goccy/go-json v0.10.2/go.mod h1:6MelG93GURQebXPDq3khkgXZkazVtN9CRI+MGFi0w8I=
-golang.org/x/net v0.5.0 h1:GyT4nK/YDHSqa1c4753ouYCDajOYKTja9Xb/OHtgvSw=
-golang.org/x/net v0.9.0 h1:aWJ/m6xSmxWBx+V0XRHTlrYrPG56jKsLdTFmsSsCzOM=
-golang.org/x/net v0.9.0/go.mod h1:d48xBJpPfHeWQsugry2m+kC02ZBRGRgulfHnEXEuWns=
+golang.org/x/net v0.11.0 h1:Gi2tvZIJyBtO9SDr1q9h5hEQCp/4L2RQ+ar0qjx2oNU=
+golang.org/x/net v0.11.0/go.mod h1:2L/ixqYpgIVXmeoSA/4Lu7BzTG4KIyPIryS4IsOd1oQ=

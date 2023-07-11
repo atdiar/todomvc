@@ -57,14 +57,35 @@ func App() doc.Document {
 				Defer().
 				Src("/wasm_exec.js"),
 			),
+			E(document.Script().
+				SetInnerHTML(
+					`
+					window.domMutationsDone = false;  // Set this from the WASM side when DOM mutations are done
+					window.pageLoaded = false;
+				
+					window.checkAndDispatchEvent = function() {
+						if (window.domMutationsDone && window.pageLoaded) {
+							console.log("Dispatching wasmAndPageReady event")
+							window.dispatchEvent(new Event('wasmAndPageReady'));
+						}
+					}
+					`,
+				)),
 			E(document.Script.WithID("goruntime").
 				Defer().
 				SetInnerHTML(
-					`
-						const go = new Go();
-						WebAssembly.instantiateStreaming(fetch("/app.wasm"), go.importObject).then((result) => {
-							go.run(result.instance);
-						});
+					`				
+					const go = new Go();
+					WebAssembly.instantiateStreaming(fetch("/app.wasm"), go.importObject).then((result) => {
+						go.run(result.instance);
+						// Not needed anymore: window.checkAndDispatchEvent();
+					});
+				
+					window.addEventListener('load', () => {
+						window.pageLoaded = true;
+						window.checkAndDispatchEvent();
+					});
+			
 					`,
 				),
 			),
@@ -156,7 +177,7 @@ func App() doc.Document {
 		tlist:= TodoListFromRef(TodosList)
 		tdl := tlist.GetList()
 		ntdl := ui.NewList()
-		for _, todo := range tdl.Unwrap() {
+		for _, todo := range tdl.UnsafelyUnwrap() {
 			t := todo.(Todo)
 			c, _ := t.Get("completed")
 			cpl := c.(ui.Bool)
@@ -173,16 +194,16 @@ func App() doc.Document {
 		tlist:= TodoListFromRef(TodosList)
 		l := tlist.GetList()
 
-		if len(l.Unwrap()) == 0 {
+		if len(l.UnsafelyUnwrap()) == 0 {
 			doc.SetInlineCSS(MainFooter.AsElement(), "display:none")
 		} else {
 			doc.SetInlineCSS(MainFooter.AsElement(), "display:block")
 		}
 
 		countcomplete := 0
-		allcomplete := len(l.Unwrap()) > 0
+		allcomplete := len(l.UnsafelyUnwrap()) > 0
 
-		for _, todo := range l.Unwrap() {
+		for _, todo := range l.UnsafelyUnwrap() {
 			t := todo.(Todo)
 			completed, ok := t.Get("completed")
 			if !ok {
@@ -197,7 +218,7 @@ func App() doc.Document {
 		}
 
 		tc:= TodoCountFromRef(TodoCount)
-		var itemsleft = len(l.Unwrap())-countcomplete
+		var itemsleft = len(l.UnsafelyUnwrap())-countcomplete
 		tc.SetCount(itemsleft)
 
 		if itemsleft > 0 {
@@ -228,7 +249,7 @@ func App() doc.Document {
 		tdl := tlist.GetList()
 		ntdl := tdl.MakeCopy()
 
-		for i, todo := range tdl.Unwrap() {
+		for i, todo := range tdl.UnsafelyUnwrap() {
 			t := todo.(Todo)
 			t= t.MakeCopy().Set("completed", !status).Commit()
 			ntdl.Set(i,t)		
@@ -260,7 +281,7 @@ func App() doc.Document {
 		
 		tlist:= TodoListFromRef(TodosList)
 		tdl := tlist.GetList()
-		if len(tdl.Unwrap()) == 0 {
+		if len(tdl.UnsafelyUnwrap()) == 0 {
 			doc.SetInlineCSS(MainFooter.AsElement(), "display : none")
 		} else {
 			doc.SetInlineCSS(MainFooter.AsElement(), "display : block")
@@ -276,7 +297,7 @@ func App() doc.Document {
 	MainSection.AsElement().WatchEvent("update", TodosList, ui.NewMutationHandler(func(evt ui.MutationEvent) bool {
 		tlist:= TodoListFromRef(TodosList)
 		tdl := tlist.GetList()
-		if len(tdl.Unwrap()) == 0 {
+		if len(tdl.UnsafelyUnwrap()) == 0 {
 			doc.SetInlineCSS(MainSection.AsElement(), "display : none")
 		} else {
 			doc.SetInlineCSS(MainSection.AsElement(), "display : block")
