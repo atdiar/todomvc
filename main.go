@@ -1,3 +1,4 @@
+ 
 package main
 
 import (
@@ -6,7 +7,7 @@ import (
 	. "github.com/atdiar/particleui/drivers/js/declarative"
 )
 
-// GOOS=js GOARCH=wasm go build -o  server/assets/app.wasm
+//  GOOS=js GOARCH=wasm go build -o  server/assets/app.wasm		 
 
 func App() doc.Document {
 
@@ -72,7 +73,7 @@ func App() doc.Document {
 					`,
 				)),
 			E(document.Script.WithID("goruntime").
-				Defer().
+				Defer(). // necessary when doing SSR
 				SetInnerHTML(
 					`				
 					const go = new Go();
