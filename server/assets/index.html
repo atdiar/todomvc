@@ -9,25 +9,32 @@
 	
 	<script id="wasmVM" src="/wasm_exec.js"></script>
 	<script id="goruntime">
-		const go = new Go();
-        WebAssembly.instantiateStreaming(fetch("/app.wasm"), go.importObject).then((result) => {
-            go.run(result.instance);
-            wasmReady = true;
+        let wasmLoadedResolver, loadEventResolver;
+        window.wasmLoaded = new Promise(resolve => wasmLoadedResolver = resolve);
+        window.loadEventFired = new Promise(resolve => loadEventResolver = resolve);
 
-            // If 'load' event was already fired before WASM was ready,
-            // manually dispatch the custom event
-            if (document.readyState === 'complete') {
-                window.dispatchEvent(new Event('wasmAndPageReady'));
-            }
+        window.onWasmDone = function() {
+            wasmLoadedResolver();
+        }
 
-            window.addEventListener('load', () => {
-                // If WASM was ready before 'load' event, manually dispatch the custom event
-                if (wasmReady) {
-                    window.dispatchEvent(new Event('wasmAndPageReady'));
-                }
-            });
+        window.addEventListener('load', () => {
+            console.log("load event fired...");
+            loadEventResolver();
         });
-	</script>
+
+        const go = new Go();
+        WebAssembly.instantiateStreaming(fetch("/app.wasm"), go.importObject)
+        .then((result) => {
+            go.run(result.instance);
+        });
+
+        Promise.all([window.wasmLoaded, window.loadEventFired]).then(() => {
+            setTimeout(() => {
+                console.log("about to dispatch PageReady event...");
+                window.dispatchEvent(new Event('PageReady'));
+            }, 50);
+        });
+    </script>
 	
 	<!-- 
 	<script src="gopherjs.js.map"></script>

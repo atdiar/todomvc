@@ -12,7 +12,7 @@ func NewTodoInput(document doc.Document, id string, options ...string) doc.Input
 	doc.SetAttribute(todosinput.AsElement(), "placeholder", "What needs to be done?")
 	doc.SetAttribute(todosinput.AsElement(), "onfocus", "this.value=''")
 	
-	doc.Autofocus(todosinput.AsElement()) // DEBUG even on F5?
+	doc.Autofocus(todosinput.AsElement())
 
 	todosinput.AsElement().AddEventListener("change", ui.NewEventHandler(func(evt ui.Event) bool {
 		v,ok:= evt.Value().(ui.Object).Get("value")

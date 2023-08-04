@@ -55,43 +55,43 @@ func App() doc.Document {
 				SetAttribute("href","/css/todomvc.css"),
 			),
 			E(document.Script.WithID("wasmVM").
-				Defer().
 				Src("/wasm_exec.js"),
 			),
-			E(document.Script().
+			E(document.Script.WithID("goruntime").
 				SetInnerHTML(
 					`
-					window.domMutationsDone = false;  // Set this from the WASM side when DOM mutations are done
-					window.pageLoaded = false;
-				
-					window.checkAndDispatchEvent = function() {
-						if (window.domMutationsDone && window.pageLoaded) {
-							console.log("Dispatching wasmAndPageReady event")
-							window.dispatchEvent(new Event('wasmAndPageReady'));
+						let wasmLoadedResolver, loadEventResolver;
+						window.wasmLoaded = new Promise(resolve => wasmLoadedResolver = resolve);
+						window.loadEventFired = new Promise(resolve => loadEventResolver = resolve);
+					
+						window.onWasmDone = function() {
+							wasmLoadedResolver();
 						}
-					}
-					`,
-				)),
-			E(document.Script.WithID("goruntime").
-				Defer(). // necessary when doing SSR
-				SetInnerHTML(
-					`				
-					const go = new Go();
-					WebAssembly.instantiateStreaming(fetch("/app.wasm"), go.importObject).then((result) => {
-						go.run(result.instance);
-						// Not needed anymore: window.checkAndDispatchEvent();
-					});
-				
-					window.addEventListener('load', () => {
-						window.pageLoaded = true;
-						window.checkAndDispatchEvent();
-					});
-			
+					
+						window.addEventListener('load', () => {
+							console.log("load event fired...");
+							loadEventResolver();
+						});
+					
+						const go = new Go();
+						WebAssembly.instantiateStreaming(fetch("/app.wasm"), go.importObject)
+						.then((result) => {
+							go.run(result.instance);
+						});
+					
+						Promise.all([window.wasmLoaded, window.loadEventFired]).then(() => {
+							setTimeout(() => {
+								console.log("about to dispatch PageReady event...");
+								window.dispatchEvent(new Event('PageReady'));
+							}, 50);
+						});
 					`,
 				),
 			),
 		),
 	)	
+
+	
 
 	
 	E(document.Body(),
